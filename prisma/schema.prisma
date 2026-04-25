@@ -1,0 +1,159 @@
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  username     String       @unique
+  passwordHash String
+  plan         String       @default("FREE")
+  billingEmail String?
+  stripeCustomerId String?
+  stripeSubscriptionId String?
+  subscriptionStatus String?
+  publicViews  Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  profile      Profile?
+  domainVerification DomainVerification?
+  dailyViews   DailyProfileView[]
+  projects     Project[]
+  skills       Skill[]
+  awards       Award[]
+  leadership   Leadership[]
+  experience   Experience[]
+  education    Education[]
+}
+
+model DomainVerification {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain      String
+  token       String   @unique
+  status      String   @default("pending")
+  verifiedAt  DateTime?
+  checkedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model DailyProfileView {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day       String
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, day])
+}
+
+model Profile {
+  id           String   @id @default(cuid())
+  userId       String?  @unique
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName  String   @default("Your Name")
+  headline     String   @default("Software developer")
+  bio          String   @default("")
+  email        String?
+  phone        String?
+  location     String?
+  website      String?
+  discordUrl   String?
+  xUrl         String?
+  threadsUrl   String?
+  instagramUrl String?
+  facebookUrl  String?
+  whatsappUrl  String?
+  linkedinUrl  String?
+  githubUrl    String?
+  resumeUrl    String?
+  profileImage String?
+  theme        String       @default("midnight")
+  customDomain String?
+  onboardingCompleted Boolean @default(false)
+  updatedAt    DateTime @updatedAt
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String   @default("")
+  status      String   @default("JUST_STARTED")
+  imageUrl    String?
+  demoUrl     String?
+  repoUrl     String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Skill {
+  id          String @id @default(cuid())
+  userId      String?
+  user        User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  category    String @default("")
+  level       Int    @default(50)
+  exampleNote String @default("")
+  sortOrder   Int    @default(0)
+}
+
+model Award {
+  id          String @id @default(cuid())
+  userId      String?
+  user        User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  issuer      String @default("")
+  year        String @default("")
+  description String @default("")
+  imageUrl    String?
+  sortOrder   Int    @default(0)
+}
+
+model Leadership {
+  id           String @id @default(cuid())
+  userId       String?
+  user         User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         String
+  organization String
+  period       String @default("")
+  description  String @default("")
+  imageUrl     String?
+  sortOrder    Int    @default(0)
+}
+
+model Experience {
+  id          String @id @default(cuid())
+  userId      String?
+  user        User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  company     String
+  location    String?
+  period      String
+  description String @default("")
+  sortOrder   Int    @default(0)
+}
+
+model Education {
+  id        String @id @default(cuid())
+  userId    String?
+  user      User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  school    String
+  degree    String
+  period    String
+  details   String @default("")
+  sortOrder Int    @default(0)
+}
