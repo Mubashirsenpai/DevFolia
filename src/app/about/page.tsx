@@ -13,26 +13,34 @@ export default function AboutPage() {
         <p className="mt-6 text-sm font-semibold uppercase tracking-[0.25em] text-emerald-400">
           About
         </p>
-        <h1 className="mt-4 text-4xl font-bold text-white">What is DevFolia?</h1>
-        <p className="mt-5 text-slate-300">
+        <h1 className="mt-4 text-4xl font-bold text-white sm:text-5xl">What is DevFolia?</h1>
+        <p className="mt-5 max-w-3xl text-slate-300">
           DevFolia is an independent web app where users create and manage their own
           portfolio profile, then share a unique public link with recruiters,
           clients, and collaborators.
         </p>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5">
+          <div className="glass-card rounded-2xl p-6">
             <p className="text-lg font-semibold text-white">Creator-first</p>
             <p className="mt-2 text-sm text-slate-400">
               Easy onboarding and a focused dashboard for quick profile updates.
             </p>
           </div>
-          <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5">
+          <div className="glass-card rounded-2xl p-6">
             <p className="text-lg font-semibold text-white">Share-ready</p>
             <p className="mt-2 text-sm text-slate-400">
               Every user gets a public route like <code>/username</code>.
             </p>
           </div>
+        </div>
+
+        <div className="glass-card mt-6 rounded-2xl p-6">
+          <p className="text-lg font-semibold text-white">Professional by default</p>
+          <p className="mt-2 text-sm text-slate-400">
+            DevFolia focuses on clean layout, clear hierarchy, smooth interactions,
+            and conversion-oriented profile presentation to help users attract opportunities.
+          </p>
         </div>
 
         <div className="mt-10 flex gap-3">
@@ -51,7 +59,10 @@ export default function AboutPage() {
         </div>
       </main>
       <footer className="border-t border-[var(--border)] py-6 text-center text-xs text-slate-500">
-        DevFolia © {new Date().getFullYear()} · Build your public brand
+        DevFolia © {new Date().getFullYear()} ·{" "}
+        <Link href="/contact" className="hover:text-emerald-300">
+          Contact us
+        </Link>
       </footer>
     </div>
   );

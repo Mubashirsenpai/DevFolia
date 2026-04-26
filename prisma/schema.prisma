@@ -31,6 +31,32 @@ model User {
   leadership   Leadership[]
   experience   Experience[]
   education    Education[]
+  passwordResetTokens PasswordResetToken[]
+  platformEvents PlatformEvent[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PlatformEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  type      String
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([userId, createdAt])
 }
 
 model DomainVerification {

@@ -4,8 +4,13 @@ import { ImageUploadField } from "@/components/ImageUploadField";
 import { ResumeUploadField } from "@/components/ResumeUploadField";
 import { requireSession } from "@/lib/auth";
 
-export default async function AdminProfilePage() {
+export default async function AdminProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; saved?: string }>;
+}) {
   const session = await requireSession();
+  const { error, saved } = await searchParams;
   const profile = await ensureProfile(session.sub, session.username);
 
   return (
@@ -14,6 +19,17 @@ export default async function AdminProfilePage() {
       <p className="mt-1 text-sm text-slate-400">
         This appears in the hero and contact area on your public site.
       </p>
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-amber-700/40 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">
+          {error}
+        </div>
+      )}
+      {saved === "1" && (
+        <div className="mt-4 rounded-lg border border-emerald-700/40 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-200">
+          Profile changes saved.
+        </div>
+      )}
 
       <form action={updateProfile} className="mt-8 space-y-6">
         <ImageUploadField

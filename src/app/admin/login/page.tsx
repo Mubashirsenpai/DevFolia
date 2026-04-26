@@ -3,9 +3,14 @@ import { redirect } from "next/navigation";
 import { getCurrentSession } from "@/lib/auth";
 import { LoginForm } from "./LoginForm";
 
-export default async function AdminLoginPage() {
+export default async function AdminLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; reset?: string }>;
+}) {
+  const { from, reset } = await searchParams;
   const session = await getCurrentSession();
-  if (session) redirect("/admin");
+  if (session) redirect(from && from.startsWith("/") ? from : "/admin");
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4">
@@ -17,7 +22,12 @@ export default async function AdminLoginPage() {
         <p className="mt-1 text-sm text-slate-400">
           Access your DevFolia dashboard.
         </p>
-        <LoginForm />
+        {reset === "success" ? (
+          <p className="mt-3 rounded-md border border-emerald-700/40 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-300">
+            Password updated successfully. Sign in with your new password.
+          </p>
+        ) : null}
+        <LoginForm redirectTo={from && from.startsWith("/") ? from : "/admin"} />
         <p className="mt-4 text-center text-sm text-slate-400">
           New here?{" "}
           <Link href="/admin/signup" className="text-emerald-400 hover:underline">

@@ -3,8 +3,13 @@ import { createAward, deleteAward, updateAward } from "@/app/admin/actions";
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { requireSession } from "@/lib/auth";
 
-export default async function AdminAwardsPage() {
+export default async function AdminAwardsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ planLimit?: string; cap?: string }>;
+}) {
   const session = await requireSession();
+  const { planLimit, cap } = await searchParams;
   const awards = await prisma.award.findMany({
     where: { userId: session.sub },
     orderBy: { sortOrder: "asc" },
@@ -18,6 +23,13 @@ export default async function AdminAwardsPage() {
           Certificates, competitions, honors — optional image per entry.
         </p>
       </div>
+
+      {planLimit && (
+        <div className="rounded-lg border border-amber-700/40 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">
+          You have reached your plan limit for awards
+          {cap ? ` (${cap} max).` : "."} Upgrade to add more.
+        </div>
+      )}
 
       <section className="rounded-xl border border-slate-800 bg-slate-950/50 p-6">
         <h2 className="text-lg font-semibold text-emerald-300">Add award</h2>

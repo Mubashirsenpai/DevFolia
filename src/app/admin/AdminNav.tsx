@@ -18,19 +18,22 @@ const links = [
   { href: "/admin/settings", label: "Settings" },
 ];
 
-export function AdminNav() {
+export function AdminNav({ showSuperAdmin = false }: { showSuperAdmin?: boolean }) {
   const pathname = usePathname();
+  const navLinks = showSuperAdmin
+    ? [...links, { href: "/admin/super", label: "Super Admin" }]
+    : links;
 
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-slate-800 bg-slate-950/80">
       <div className="border-b border-slate-800 p-4">
         <p className="text-xs font-semibold uppercase tracking-widest text-emerald-400">
-          Admin
+          DEVFOLIA
         </p>
         <p className="mt-1 text-sm text-slate-400">Content manager</p>
       </div>
       <nav className="flex flex-1 flex-col gap-0.5 p-2">
-        {links.map((l) => {
+        {navLinks.map((l) => {
           const active =
             l.href === "/admin"
               ? pathname === "/admin"

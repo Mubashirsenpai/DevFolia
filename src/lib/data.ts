@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { logPlatformEvent } from "@/lib/platform-events";
 
 export async function ensureProfile(userId: string, fallbackName = "Your Name") {
   return prisma.profile.upsert({
@@ -19,6 +20,9 @@ export async function getPublicPortfolioByUsername(username: string) {
     select: { id: true, username: true },
   });
   if (!user) return null;
+  await ensureProfile(user.id, user.username);
+  const profile = await prisma.profile.findUnique({ where: { userId: user.id } });
+  if (!profile?.onboardingCompleted) return null;
   await prisma.user.update({
     where: { id: user.id },
     data: { publicViews: { increment: 1 } },
@@ -29,9 +33,12 @@ export async function getPublicPortfolioByUsername(username: string) {
     create: { userId: user.id, day, count: 1 },
     update: { count: { increment: 1 } },
   });
-  await ensureProfile(user.id, user.username);
+  await logPlatformEvent({
+    type: "portfolio.public_view",
+    userId: user.id,
+    metadata: { username: user.username },
+  });
   const [
-    profile,
     projects,
     skills,
     awards,
@@ -39,7 +46,6 @@ export async function getPublicPortfolioByUsername(username: string) {
     experience,
     education,
   ] = await Promise.all([
-    prisma.profile.findUnique({ where: { userId: user.id } }),
     prisma.project.findMany({ where: { userId: user.id }, orderBy: { sortOrder: "asc" } }),
     prisma.skill.findMany({ where: { userId: user.id }, orderBy: { sortOrder: "asc" } }),
     prisma.award.findMany({ where: { userId: user.id }, orderBy: { sortOrder: "asc" } }),
@@ -50,7 +56,44 @@ export async function getPublicPortfolioByUsername(username: string) {
 
   return {
     user,
-    profile: profile!,
+    profile,
+    projects,
+    skills,
+    awards,
+    leadership,
+    experience,
+    education,
+  };
+}
+
+/** Full portfolio data for the logged-in owner (e.g. onboarding preview). No view tracking, not gated on publish. */
+export async function getPrivatePortfolioDataForUser(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, username: true },
+  });
+  if (!user) return null;
+  await ensureProfile(user.id, user.username);
+  const profile = await prisma.profile.findUnique({ where: { userId: user.id } });
+  if (!profile) return null;
+  const [
+    projects,
+    skills,
+    awards,
+    leadership,
+    experience,
+    education,
+  ] = await Promise.all([
+    prisma.project.findMany({ where: { userId: user.id }, orderBy: { sortOrder: "asc" } }),
+    prisma.skill.findMany({ where: { userId: user.id }, orderBy: { sortOrder: "asc" } }),
+    prisma.award.findMany({ where: { userId: user.id }, orderBy: { sortOrder: "asc" } }),
+    prisma.leadership.findMany({ where: { userId: user.id }, orderBy: { sortOrder: "asc" } }),
+    prisma.experience.findMany({ where: { userId: user.id }, orderBy: { sortOrder: "asc" } }),
+    prisma.education.findMany({ where: { userId: user.id }, orderBy: { sortOrder: "asc" } }),
+  ]);
+  return {
+    user,
+    profile,
     projects,
     skills,
     awards,

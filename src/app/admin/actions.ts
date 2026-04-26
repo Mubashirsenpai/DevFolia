@@ -3,12 +3,22 @@
 import { randomUUID } from "crypto";
 import { randomBytes } from "crypto";
 import { resolveTxt } from "dns/promises";
-import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { getPriceIdForPlan, getStripe } from "@/lib/stripe";
+import { uploadToCloudinary } from "@/lib/cloudinary";
+import { logPlatformEvent } from "@/lib/platform-events";
+import {
+  allowedThemesForPlan,
+  countFileUploads,
+  getUserPlan,
+  maxImageFileUploadsForPlan,
+  maxItemsForPlan,
+  maxResumeUploadsForPlan,
+} from "@/lib/plan-limits";
 import { parseProjectStatus } from "@/lib/types";
 
 function txt(formData: FormData, key: string, fallback = ""): string {
@@ -41,7 +51,16 @@ const ALLOWED_RESUME_TYPES = ["application/pdf"];
 export async function uploadPortfolioImage(
   formData: FormData,
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
-  await requireSession();
+  const session = await requireSession();
+  const plan = await getUserPlan(session.sub);
+  const used = await countFileUploads(session.sub, "image");
+  const max = maxImageFileUploadsForPlan(plan);
+  if (used >= max) {
+    return {
+      ok: false,
+      error: `Image upload limit reached for your plan (${used}/${max}).`,
+    };
+  }
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Choose an image file." };
@@ -52,8 +71,6 @@ export async function uploadPortfolioImage(
   if (file.size > 5 * 1024 * 1024) {
     return { ok: false, error: "Max file size is 5MB." };
   }
-  const uploadsDir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(uploadsDir, { recursive: true });
   const ext =
     path.extname(file.name) ||
     (file.type === "image/png"
@@ -65,17 +82,39 @@ export async function uploadPortfolioImage(
           : ".jpg");
   const name = `${randomUUID()}${ext}`;
   const buf = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(uploadsDir, name), buf);
-  const url = `/uploads/${name}`;
-  revalidatePath("/");
-  revalidatePath("/admin");
-  return { ok: true, url };
+  try {
+    const result = await uploadToCloudinary(buf, {
+      folder: "devfolia/profile-images",
+      publicId: name,
+      resourceType: "image",
+    });
+    const url = result.secureUrl;
+    await logPlatformEvent({
+      type: "content.image_uploaded",
+      userId: session.sub,
+      metadata: { url },
+    });
+    revalidatePath("/");
+    revalidatePath("/admin");
+    return { ok: true, url };
+  } catch {
+    return { ok: false, error: "Image upload failed. Check Cloudinary setup." };
+  }
 }
 
 export async function uploadResumePdf(
   formData: FormData,
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   const session = await requireSession();
+  const plan = await getUserPlan(session.sub);
+  const used = await countFileUploads(session.sub, "resume");
+  const max = maxResumeUploadsForPlan(plan);
+  if (used >= max) {
+    return {
+      ok: false,
+      error: `Resume upload limit reached for your plan (${used}/${max}).`,
+    };
+  }
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Choose a PDF file." };
@@ -93,12 +132,23 @@ export async function uploadResumePdf(
     return { ok: false, error: "Max file size is 10MB." };
   }
 
-  const uploadsDir = path.join(process.cwd(), "public", "uploads", "resume");
-  await mkdir(uploadsDir, { recursive: true });
-  const name = `${randomUUID()}.pdf`;
   const buf = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(uploadsDir, name), buf);
-  const url = `/uploads/resume/${name}`;
+  let url = "";
+  try {
+    const result = await uploadToCloudinary(buf, {
+      folder: "devfolia/resumes",
+      publicId: randomUUID(),
+      resourceType: "raw",
+    });
+    url = result.secureUrl;
+    await logPlatformEvent({
+      type: "content.resume_uploaded",
+      userId: session.sub,
+      metadata: { url },
+    });
+  } catch {
+    return { ok: false, error: "Resume upload failed. Check Cloudinary setup." };
+  }
 
   await prisma.profile.upsert({
     where: { userId: session.sub },
@@ -127,6 +177,30 @@ export async function uploadResumePdf(
 
 export async function updateProfile(formData: FormData) {
   const session = await requireSession();
+  const plan = await getUserPlan(session.sub);
+  const existing = await prisma.profile.findUnique({ where: { userId: session.sub } });
+  const nextProfileImage = txt(formData, "profileImage") || null;
+  const nextResume = normalizeUrl(txt(formData, "resumeUrl"));
+  if (plan !== "BUSINESS" && nextResume && nextResume !== existing?.resumeUrl) {
+    const used = await countFileUploads(session.sub, "resume");
+    if (used >= maxResumeUploadsForPlan(plan)) {
+      redirect(
+        "/admin/profile?error=" +
+          encodeURIComponent(
+            "Resume change limit reached for your plan. Upgrade to add more documents.",
+          ),
+      );
+    }
+  }
+  if (nextProfileImage && nextProfileImage !== existing?.profileImage) {
+    const used = await countFileUploads(session.sub, "image");
+    if (used >= maxImageFileUploadsForPlan(plan)) {
+      redirect(
+        "/admin/profile?error=" +
+          encodeURIComponent("Profile photo upload limit reached for your plan."),
+      );
+    }
+  }
   await prisma.profile.update({
     where: { userId: session.sub },
     data: {
@@ -145,62 +219,68 @@ export async function updateProfile(formData: FormData) {
       whatsappUrl: normalizeUrl(txt(formData, "whatsappUrl")),
       linkedinUrl: normalizeUrl(txt(formData, "linkedinUrl")),
       githubUrl: normalizeUrl(txt(formData, "githubUrl")),
-      resumeUrl: normalizeUrl(txt(formData, "resumeUrl")),
-      profileImage: txt(formData, "profileImage") || null,
+      resumeUrl: nextResume,
+      profileImage: nextProfileImage,
     },
   });
   revalidatePath("/");
   revalidatePath("/admin/profile");
   revalidatePath(`/${session.username}`);
+  redirect("/admin/profile?saved=1");
 }
 
-export async function completeOnboarding(formData: FormData) {
+export async function completeOnboarding() {
   const session = await requireSession();
   await prisma.profile.upsert({
     where: { userId: session.sub },
     create: {
       userId: session.sub,
-      displayName: txt(formData, "displayName", session.username),
-      headline: txt(formData, "headline", "Your professional headline"),
-      bio: txt(formData, "bio", "Tell visitors who you are and what you build."),
+      displayName: session.username,
+      headline: "Your professional headline",
+      bio: "Tell visitors who you are and what you build.",
       onboardingCompleted: true,
     },
     update: {
-      displayName: txt(formData, "displayName", session.username),
-      headline: txt(formData, "headline", "Your professional headline"),
-      bio: txt(formData, "bio", "Tell visitors who you are and what you build."),
       onboardingCompleted: true,
     },
   });
   revalidatePath("/admin");
+  revalidatePath("/admin/onboarding");
   revalidatePath(`/${session.username}`);
+  await logPlatformEvent({
+    type: "portfolio.published",
+    userId: session.sub,
+    metadata: { username: session.username },
+  });
+  redirect("/admin");
 }
 
 export async function updateAccountSettings(formData: FormData) {
   const session = await requireSession();
+  const plan = await getUserPlan(session.sub);
   const billingEmail = txt(formData, "billingEmail").trim().toLowerCase() || null;
-  const plan = txt(formData, "plan", "FREE");
   const theme = txt(formData, "theme", "midnight");
-  const customDomain = txt(formData, "customDomain").trim().toLowerCase() || null;
+  const customDomainRaw = txt(formData, "customDomain").trim().toLowerCase() || null;
+  const customDomain = plan === "BUSINESS" ? customDomainRaw : null;
 
   await prisma.user.update({
     where: { id: session.sub },
     data: {
       billingEmail,
-      plan: ["FREE", "PRO", "BUSINESS"].includes(plan) ? plan : "FREE",
     },
   });
+
+  const allowed = allowedThemesForPlan(plan);
+  const resolvedTheme = allowed.includes(theme) ? theme : allowed[0] ?? "midnight";
 
   await prisma.profile.updateMany({
     where: { userId: session.sub },
     data: {
-      theme: ["midnight", "emerald", "sunset"].includes(theme)
-        ? theme
-        : "midnight",
+      theme: resolvedTheme,
       customDomain,
     },
   });
-  if (customDomain) {
+  if (plan === "BUSINESS" && customDomain) {
     await prisma.domainVerification.upsert({
       where: { userId: session.sub },
       create: {
@@ -223,6 +303,7 @@ export async function updateAccountSettings(formData: FormData) {
 
   revalidatePath("/admin/settings");
   revalidatePath(`/${session.username}`);
+  redirect("/admin/settings?saved=1");
 }
 
 export async function startCheckout(plan: "PRO" | "BUSINESS") {
@@ -263,6 +344,8 @@ export async function createBillingPortal() {
 
 export async function verifyCustomDomain() {
   const session = await requireSession();
+  const plan = await getUserPlan(session.sub);
+  if (plan !== "BUSINESS") return;
   const record = await prisma.domainVerification.findUnique({
     where: { userId: session.sub },
   });
@@ -292,8 +375,28 @@ export async function verifyCustomDomain() {
   }
 }
 
+async function assertCanAddListItem(
+  plan: Awaited<ReturnType<typeof getUserPlan>>,
+  currentCount: Promise<number>,
+  redirectPath: string,
+) {
+  const current = await currentCount;
+  const cap = maxItemsForPlan(plan);
+  if (current >= cap) {
+    redirect(
+      `${redirectPath}?planLimit=1&cap=${encodeURIComponent(String(cap))}`,
+    );
+  }
+}
+
 export async function createProject(formData: FormData) {
   const session = await requireSession();
+  const plan = await getUserPlan(session.sub);
+  await assertCanAddListItem(
+    plan,
+    prisma.project.count({ where: { userId: session.sub } }),
+    "/admin/projects",
+  );
   await prisma.project.create({
     data: {
       userId: session.sub,
@@ -337,6 +440,12 @@ export async function deleteProject(id: string) {
 
 export async function createSkill(formData: FormData) {
   const session = await requireSession();
+  const plan = await getUserPlan(session.sub);
+  await assertCanAddListItem(
+    plan,
+    prisma.skill.count({ where: { userId: session.sub } }),
+    "/admin/skills",
+  );
   const level = Math.min(100, Math.max(0, num(formData, "level", 50)));
   await prisma.skill.create({
     data: {
@@ -378,6 +487,12 @@ export async function deleteSkill(id: string) {
 
 export async function createAward(formData: FormData) {
   const session = await requireSession();
+  const plan = await getUserPlan(session.sub);
+  await assertCanAddListItem(
+    plan,
+    prisma.award.count({ where: { userId: session.sub } }),
+    "/admin/awards",
+  );
   await prisma.award.create({
     data: {
       userId: session.sub,
@@ -419,6 +534,12 @@ export async function deleteAward(id: string) {
 
 export async function createLeadership(formData: FormData) {
   const session = await requireSession();
+  const plan = await getUserPlan(session.sub);
+  await assertCanAddListItem(
+    plan,
+    prisma.leadership.count({ where: { userId: session.sub } }),
+    "/admin/leadership",
+  );
   await prisma.leadership.create({
     data: {
       userId: session.sub,
@@ -460,6 +581,12 @@ export async function deleteLeadership(id: string) {
 
 export async function createExperience(formData: FormData) {
   const session = await requireSession();
+  const plan = await getUserPlan(session.sub);
+  await assertCanAddListItem(
+    plan,
+    prisma.experience.count({ where: { userId: session.sub } }),
+    "/admin/experience",
+  );
   await prisma.experience.create({
     data: {
       userId: session.sub,
@@ -501,6 +628,12 @@ export async function deleteExperience(id: string) {
 
 export async function createEducation(formData: FormData) {
   const session = await requireSession();
+  const plan = await getUserPlan(session.sub);
+  await assertCanAddListItem(
+    plan,
+    prisma.education.count({ where: { userId: session.sub } }),
+    "/admin/education",
+  );
   await prisma.education.create({
     data: {
       userId: session.sub,

@@ -16,9 +16,17 @@ function getSecretKey(): Uint8Array {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(COOKIE_NAME)?.value;
+  const isPublicAuthRoute =
+    pathname.startsWith("/admin/login") ||
+    pathname.startsWith("/admin/signup") ||
+    pathname.startsWith("/admin/forgot-password") ||
+    pathname.startsWith("/admin/reset-password");
 
-  if (pathname.startsWith("/admin/login") || pathname.startsWith("/admin/signup")) {
+  if (isPublicAuthRoute) {
     if (!token) return NextResponse.next();
+    if (pathname.startsWith("/admin/forgot-password") || pathname.startsWith("/admin/reset-password")) {
+      return NextResponse.next();
+    }
     try {
       await jwtVerify(token, getSecretKey());
       const url = request.nextUrl.clone();

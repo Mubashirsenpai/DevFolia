@@ -1,12 +1,12 @@
 import Link from "next/link";
 
 const features = [
-  "Create a personalized public portfolio page",
-  "Upload profile image, CV, project and award images",
-  "Manage projects, skills, experience, education, awards, leadership",
-  "Add social and contact links",
-  "Choose visual themes for your public page",
-  "Track profile views in analytics",
+  "Personalized public portfolio page",
+  "Image and CV uploads with secure management",
+  "Projects, skills, experience, education, awards, leadership",
+  "Social/contact links and share-ready profile URL",
+  "Visual theme customization for brand identity",
+  "Analytics insights for profile performance",
 ];
 
 export default function FeaturesPage() {
@@ -22,7 +22,7 @@ export default function FeaturesPage() {
         <p className="mt-6 text-sm font-semibold uppercase tracking-[0.25em] text-emerald-400">
           Features
         </p>
-        <h1 className="mt-4 text-4xl font-bold text-white">
+        <h1 className="mt-4 text-4xl font-bold text-white sm:text-5xl">
           What users can do on DevFolia
         </h1>
         <p className="mt-5 text-slate-300">
@@ -30,12 +30,13 @@ export default function FeaturesPage() {
           from one dashboard.
         </p>
 
-        <ul className="mt-8 space-y-3">
-          {features.map((feature) => (
+        <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+          {features.map((feature, idx) => (
             <li
               key={feature}
-              className="rounded-lg border border-slate-800 bg-slate-950/60 px-4 py-3 text-sm text-slate-200"
+              className="glass-card rounded-xl px-4 py-4 text-sm text-slate-200"
             >
+              <span className="mr-2 text-emerald-300">0{idx + 1}.</span>
               {feature}
             </li>
           ))}
@@ -57,7 +58,10 @@ export default function FeaturesPage() {
         </div>
       </main>
       <footer className="border-t border-[var(--border)] py-6 text-center text-xs text-slate-500">
-        DevFolia © {new Date().getFullYear()} · Build your public brand
+        DevFolia © {new Date().getFullYear()} ·{" "}
+        <Link href="/contact" className="hover:text-emerald-300">
+          Contact us
+        </Link>
       </footer>
     </div>
   );

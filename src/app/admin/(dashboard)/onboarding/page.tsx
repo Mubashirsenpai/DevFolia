@@ -1,55 +1,85 @@
-import { redirect } from "next/navigation";
 import { completeOnboarding } from "@/app/admin/actions";
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
-import { ensureProfile } from "@/lib/data";
+import { ensureProfile, getPrivatePortfolioDataForUser } from "@/lib/data";
+import { PublicPortfolioPage } from "@/components/portfolio/PublicPortfolioPage";
+import { OnboardingPortfolioPreview } from "@/components/onboarding/OnboardingPortfolioPreview";
 
 export default async function AdminOnboardingPage() {
   const session = await requireSession();
   const profile = await ensureProfile(session.sub, session.username);
-
-  if (profile.onboardingCompleted) {
-    redirect("/admin");
-  }
+  const previewData = await getPrivatePortfolioDataForUser(session.sub);
+  const [projects, skills, experience, education] = await Promise.all([
+    prisma.project.count({ where: { userId: session.sub } }),
+    prisma.skill.count({ where: { userId: session.sub } }),
+    prisma.experience.count({ where: { userId: session.sub } }),
+    prisma.education.count({ where: { userId: session.sub } }),
+  ]);
 
   return (
     <div className="mx-auto max-w-2xl rounded-xl border border-slate-800 bg-slate-950/50 p-6">
-      <h1 className="text-2xl font-bold text-white">Welcome to DevFolia</h1>
+      <h1 className="text-2xl font-bold text-white">Publish portfolio</h1>
       <p className="mt-1 text-sm text-slate-400">
-        Complete your public profile basics. You can update everything later.
+        Use this page as your final publish step after customizing and uploading your content.
       </p>
-      <form action={completeOnboarding} className="mt-6 grid gap-4">
-        <label className="block">
-          <span className="text-sm text-slate-300">Display name</span>
-          <input
-            name="displayName"
-            defaultValue={profile.displayName}
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm text-slate-300">Headline</span>
-          <input
-            name="headline"
-            defaultValue={profile.headline}
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm text-slate-300">Bio</span>
-          <textarea
-            name="bio"
-            rows={5}
-            defaultValue={profile.bio}
-            className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-          />
-        </label>
-        <button
-          type="submit"
-          className="w-fit rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-sm text-slate-300">
+          Profile: {profile.displayName ? "Ready" : "Missing"}
+        </div>
+        <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-sm text-slate-300">
+          Projects: {projects} item{projects === 1 ? "" : "s"}
+        </div>
+        <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-sm text-slate-300">
+          Skills: {skills} item{skills === 1 ? "" : "s"}
+        </div>
+        <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-sm text-slate-300">
+          Experience/Education: {experience + education} entries
+        </div>
+      </div>
+      <p className="mt-4 text-sm text-slate-400">
+        Public URL:{" "}
+        <Link href={`/${session.username}`} className="text-emerald-300 hover:underline">
+          /{session.username}
+        </Link>
+      </p>
+      {previewData && (
+        <OnboardingPortfolioPreview
+          canPublish={!profile.onboardingCompleted}
+          isPublished={profile.onboardingCompleted}
+          publicPath={`/${session.username}`}
         >
-          Continue to dashboard
-        </button>
-      </form>
+          <PublicPortfolioPage data={previewData} />
+        </OnboardingPortfolioPreview>
+      )}
+      {profile.onboardingCompleted ? (
+        <div className="mt-6 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4">
+          <p className="text-sm text-emerald-200">Your portfolio is published.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href={`/${session.username}`}
+              className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:border-emerald-500/40 hover:text-emerald-300"
+            >
+              View public page
+            </Link>
+            <Link
+              href="/admin"
+              className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+            >
+              Back to overview
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <form action={completeOnboarding} className="mt-6">
+          <button
+            type="submit"
+            className="w-fit rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+          >
+            Publish portfolio
+          </button>
+        </form>
+      )}
     </div>
   );
 }

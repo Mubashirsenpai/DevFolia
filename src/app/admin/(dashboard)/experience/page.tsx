@@ -6,8 +6,13 @@ import {
 } from "@/app/admin/actions";
 import { requireSession } from "@/lib/auth";
 
-export default async function AdminExperiencePage() {
+export default async function AdminExperiencePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ planLimit?: string; cap?: string }>;
+}) {
   const session = await requireSession();
+  const { planLimit, cap } = await searchParams;
   const rows = await prisma.experience.findMany({
     where: { userId: session.sub },
     orderBy: { sortOrder: "asc" },
@@ -21,6 +26,13 @@ export default async function AdminExperiencePage() {
           Jobs, internships, freelance — mirrors a résumé experience section.
         </p>
       </div>
+
+      {planLimit && (
+        <div className="rounded-lg border border-amber-700/40 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">
+          You have reached your plan limit for experience entries
+          {cap ? ` (${cap} max).` : "."} Upgrade to add more.
+        </div>
+      )}
 
       <section className="rounded-xl border border-slate-800 bg-slate-950/50 p-6">
         <h2 className="text-lg font-semibold text-emerald-300">Add experience</h2>

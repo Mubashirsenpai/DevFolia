@@ -6,7 +6,7 @@ import { SignJWT, jwtVerify } from "jose";
 const COOKIE_NAME = "portfolio_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
 
-type SessionPayload = {
+export type SessionPayload = {
   sub: string;
   username: string;
 };

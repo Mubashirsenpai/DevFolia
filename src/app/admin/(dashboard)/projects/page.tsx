@@ -19,8 +19,13 @@ function statusLabel(s: string) {
   }
 }
 
-export default async function AdminProjectsPage() {
+export default async function AdminProjectsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ planLimit?: string; cap?: string }>;
+}) {
   const session = await requireSession();
+  const { planLimit, cap } = await searchParams;
   const projects = await prisma.project.findMany({
     where: { userId: session.sub },
     orderBy: { sortOrder: "asc" },
@@ -35,6 +40,13 @@ export default async function AdminProjectsPage() {
           first.
         </p>
       </div>
+
+      {planLimit && (
+        <div className="rounded-lg border border-amber-700/40 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">
+          You have reached your plan limit for projects
+          {cap ? ` (${cap} max).` : "."} Upgrade to add more.
+        </div>
+      )}
 
       <section className="rounded-xl border border-slate-800 bg-slate-950/50 p-6">
         <h2 className="text-lg font-semibold text-emerald-300">Add project</h2>

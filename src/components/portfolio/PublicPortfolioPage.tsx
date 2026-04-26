@@ -1,9 +1,11 @@
 import Image from "next/image";
+import Link from "next/link";
 import { CSSProperties } from "react";
 import { CvMenuButton } from "@/components/portfolio/CvMenuButton";
 import { CopyPhoneButton } from "@/components/portfolio/CopyPhoneButton";
 import { MobileNavMenu } from "@/components/portfolio/MobileNavMenu";
 import { StatusBadge } from "@/components/portfolio/StatusBadge";
+import { getPortfolioThemeDefinition } from "@/lib/portfolio-themes";
 
 type PortfolioData = {
   profile: {
@@ -53,18 +55,13 @@ export function PublicPortfolioPage({ data }: { data: PortfolioData }) {
     { label: "WhatsApp", href: absoluteUrl(profile.whatsappUrl) },
     { label: "LinkedIn", href: absoluteUrl(profile.linkedinUrl) },
   ].filter((item) => Boolean(item.href));
-  const themeStyles: CSSProperties | undefined =
-    profile.theme === "emerald"
-      ? ({ "--background": "#041110", "--card": "#0a1b1a", "--border": "#18453f" } as CSSProperties)
-      : profile.theme === "sunset"
-        ? ({ "--background": "#140a08", "--card": "#20110d", "--border": "#4a2a1f" } as CSSProperties)
-        : undefined;
+  const themeStyles = getPortfolioThemeDefinition(profile.theme).style as CSSProperties | undefined;
 
   return (
     <div className="flex min-h-full flex-1 flex-col" style={themeStyles}>
       <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--background)]/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <span className="text-sm font-semibold tracking-tight text-emerald-400">
+          <span className="text-sm font-semibold tracking-tight text-[var(--accent)]">
             {profile.displayName}
           </span>
           <MobileNavMenu />
@@ -80,7 +77,7 @@ export function PublicPortfolioPage({ data }: { data: PortfolioData }) {
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:px-6 sm:py-16">
         <section className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
-            <p className="text-sm font-medium uppercase tracking-[0.25em] text-emerald-400/90">Portfolio & CV</p>
+            <p className="text-sm font-medium uppercase tracking-[0.25em] text-[color:color-mix(in_srgb,var(--accent)_88%,white)]">Portfolio & CV</p>
             <h1 className="mt-3 text-4xl font-bold tracking-tight text-white sm:text-5xl">{profile.displayName}</h1>
             <p className="mt-3 text-xl text-[var(--muted)]">{profile.headline}</p>
             <p className="mt-6 max-w-2xl whitespace-pre-wrap text-base leading-relaxed text-slate-300">{profile.bio}</p>
@@ -92,13 +89,19 @@ export function PublicPortfolioPage({ data }: { data: PortfolioData }) {
             </div>
             <ul className="mt-6 flex flex-wrap gap-4 text-sm text-slate-400">
               {profile.location && <li>{profile.location}</li>}
-              {profile.website && <li><a href={absoluteUrl(profile.website)} target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline">Website</a></li>}
+              {profile.website && <li><a href={absoluteUrl(profile.website)} target="_blank" rel="noreferrer" className="text-[var(--accent)] hover:underline">Website</a></li>}
             </ul>
           </div>
           <div className="flex justify-center lg:justify-end">
             <div className="w-full max-w-xs">
               <div className="relative">
-                <div className="absolute -inset-4 rounded-3xl bg-gradient-to-tr from-emerald-500/20 via-transparent to-sky-500/20 blur-2xl" />
+                <div
+                  className="absolute -inset-4 rounded-3xl bg-gradient-to-tr via-transparent blur-2xl"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(to top right, var(--hero-from, rgba(52,211,153,0.2)), transparent, var(--hero-to, rgba(56,189,248,0.2)))",
+                  }}
+                />
                 {profile.profileImage ? (
                   <Image
                     src={profile.profileImage}
@@ -112,7 +115,7 @@ export function PublicPortfolioPage({ data }: { data: PortfolioData }) {
                 )}
               </div>
               <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Connect with me</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--accent-soft)]">Connect with me</p>
                 {socialLinks.length > 0 ? (
                   <ul className="mt-3 grid grid-cols-2 gap-2 lg:grid-flow-col lg:grid-rows-2 lg:grid-cols-none">
                     {socialLinks.map((item) => (
@@ -152,12 +155,17 @@ export function PublicPortfolioPage({ data }: { data: PortfolioData }) {
             </ul>
           )}
         </section>
-        <section id="skills" className="mt-24 scroll-mt-24">{skills.length === 0 ? <p className="mt-8 text-slate-500">Skills will appear here soon.</p> : <ul className="mt-10 grid gap-6 sm:grid-cols-2">{skills.map((s) => (<li key={s.id} className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5"><div className="flex items-start justify-between gap-2"><div><h3 className="font-semibold text-white">{s.name}</h3>{s.category && <p className="text-xs uppercase tracking-wider text-slate-500">{s.category}</p>}</div><span className="text-sm font-mono text-emerald-400">{s.level}%</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400" style={{ width: `${s.level}%` }} /></div>{s.exampleNote && <p className="mt-3 text-sm leading-relaxed text-slate-400">{s.exampleNote}</p>}</li>))}</ul>}</section>
-        <section id="resume" className="mt-24 scroll-mt-24"><div className="border-b border-[var(--border)] pb-4"><h2 className="text-2xl font-bold text-white">Experience & education</h2><p className="mt-1 text-sm text-[var(--muted)]">Professional timeline of experience and education.</p></div><div className="mt-10 grid gap-12 lg:grid-cols-2"><div><h3 className="text-sm font-semibold uppercase tracking-widest text-emerald-400/90">Experience</h3>{experience.length === 0 ? <p className="mt-4 text-sm text-slate-500">No entries yet.</p> : <ul className="mt-6 space-y-8">{experience.map((x) => (<li key={x.id} className="border-l-2 border-emerald-600/40 pl-4"><p className="font-semibold text-white">{x.title}</p><p className="text-sm text-emerald-200/90">{x.company}</p><p className="text-xs text-slate-500">{x.period}{x.location ? ` · ${x.location}` : ""}</p><p className="mt-2 whitespace-pre-wrap text-sm text-slate-400">{x.description}</p></li>))}</ul>}</div><div><h3 className="text-sm font-semibold uppercase tracking-widest text-emerald-400/90">Education</h3>{education.length === 0 ? <p className="mt-4 text-sm text-slate-500">No entries yet.</p> : <ul className="mt-6 space-y-8">{education.map((e) => (<li key={e.id} className="border-l-2 border-sky-600/40 pl-4"><p className="font-semibold text-white">{e.school}</p><p className="text-sm text-sky-200/90">{e.degree}</p><p className="text-xs text-slate-500">{e.period}</p>{e.details && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-400">{e.details}</p>}</li>))}</ul>}</div></div></section>
-        <section id="awards" className="mt-24 scroll-mt-24">{awards.length === 0 ? <p className="mt-8 text-slate-500">No awards listed yet.</p> : <ul className="mt-10 grid gap-6 sm:grid-cols-2">{awards.map((a) => (<li key={a.id} className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]">{a.imageUrl && <div className="relative aspect-video w-full"><Image src={a.imageUrl} alt="" fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover" /></div>}<div className="p-5"><h3 className="font-semibold text-white">{a.title}</h3><p className="text-sm text-emerald-200/80">{a.issuer}</p>{a.year && <p className="mt-1 text-xs text-slate-500">{a.year}</p>}{a.description && <p className="mt-3 text-sm text-slate-400">{a.description}</p>}</div></li>))}</ul>}</section>
+        <section id="skills" className="mt-24 scroll-mt-24">{skills.length === 0 ? <p className="mt-8 text-slate-500">Skills will appear here soon.</p> : <ul className="mt-10 grid gap-6 sm:grid-cols-2">{skills.map((s) => (<li key={s.id} className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5"><div className="flex items-start justify-between gap-2"><div><h3 className="font-semibold text-white">{s.name}</h3>{s.category && <p className="text-xs uppercase tracking-wider text-slate-500">{s.category}</p>}</div><span className="text-sm font-mono text-[var(--accent)]">{s.level}%</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-gradient-to-r" style={{ width: `${s.level}%`, backgroundImage: "linear-gradient(to right, var(--skill-bar-from, #059669), var(--skill-bar-to, #34d399))" }} /></div>{s.exampleNote && <p className="mt-3 text-sm leading-relaxed text-slate-400">{s.exampleNote}</p>}</li>))}</ul>}</section>
+        <section id="resume" className="mt-24 scroll-mt-24"><div className="border-b border-[var(--border)] pb-4"><h2 className="text-2xl font-bold text-white">Experience & education</h2><p className="mt-1 text-sm text-[var(--muted)]">Professional timeline of experience and education.</p></div><div className="mt-10 grid gap-12 lg:grid-cols-2"><div><h3 className="text-sm font-semibold uppercase tracking-widest text-[var(--accent)]">Experience</h3>{experience.length === 0 ? <p className="mt-4 text-sm text-slate-500">No entries yet.</p> : <ul className="mt-6 space-y-8">{experience.map((x) => (<li key={x.id} className="border-l-2 pl-4" style={{ borderColor: "var(--experience-rail, rgba(16,185,129,0.45))" }}><p className="font-semibold text-white">{x.title}</p><p className="text-sm text-[var(--accent-soft)]">{x.company}</p><p className="text-xs text-slate-500">{x.period}{x.location ? ` · ${x.location}` : ""}</p><p className="mt-2 whitespace-pre-wrap text-sm text-slate-400">{x.description}</p></li>))}</ul>}</div><div><h3 className="text-sm font-semibold uppercase tracking-widest text-[var(--accent)]">Education</h3>{education.length === 0 ? <p className="mt-4 text-sm text-slate-500">No entries yet.</p> : <ul className="mt-6 space-y-8">{education.map((e) => (<li key={e.id} className="border-l-2 pl-4" style={{ borderColor: "var(--education-rail, rgba(56,189,248,0.45))" }}><p className="font-semibold text-white">{e.school}</p><p className="text-sm text-[color:color-mix(in_srgb,var(--accent-soft)_80%,white)]">{e.degree}</p><p className="text-xs text-slate-500">{e.period}</p>{e.details && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-400">{e.details}</p>}</li>))}</ul>}</div></div></section>
+        <section id="awards" className="mt-24 scroll-mt-24">{awards.length === 0 ? <p className="mt-8 text-slate-500">No awards listed yet.</p> : <ul className="mt-10 grid gap-6 sm:grid-cols-2">{awards.map((a) => (<li key={a.id} className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]">{a.imageUrl && <div className="relative aspect-video w-full"><Image src={a.imageUrl} alt="" fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover" /></div>}<div className="p-5"><h3 className="font-semibold text-white">{a.title}</h3><p className="text-sm text-[var(--accent-soft)]">{a.issuer}</p>{a.year && <p className="mt-1 text-xs text-slate-500">{a.year}</p>}{a.description && <p className="mt-3 text-sm text-slate-400">{a.description}</p>}</div></li>))}</ul>}</section>
         <section id="leadership" className="mt-24 scroll-mt-24">{leadership.length === 0 ? <p className="mt-8 text-slate-500">No leadership entries yet.</p> : <ul className="mt-10 grid gap-6 sm:grid-cols-2">{leadership.map((l) => (<li key={l.id} className="flex gap-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">{l.imageUrl && <Image src={l.imageUrl} alt="" width={80} height={80} className="h-20 w-20 shrink-0 rounded-xl object-cover" />}<div><h3 className="font-semibold text-white">{l.role}</h3><p className="text-sm text-slate-300">{l.organization}</p><p className="mt-1 text-xs text-slate-500">{l.period}</p>{l.description && <p className="mt-2 text-sm text-slate-400">{l.description}</p>}</div></li>))}</ul>}</section>
       </main>
-      <footer className="border-t border-[var(--border)] py-8 text-center text-xs text-slate-600">Built with DevFolia</footer>
+      <footer className="border-t border-[var(--border)] py-8 text-center text-xs text-slate-600">
+        Built with{" "}
+        <Link href="/" className="text-[var(--accent)] hover:underline">
+          DevFolia
+        </Link>
+      </footer>
     </div>
   );
 }
