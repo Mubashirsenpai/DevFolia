@@ -50,5 +50,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  // Match `/admin` and `/admin/...` (explicit first segment avoids edge cases in matchers).
+  matcher: ["/admin", "/admin/:path*"],
 };

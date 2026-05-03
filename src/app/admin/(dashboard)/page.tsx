@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ensureProfile } from "@/lib/data";
 import { requireSession } from "@/lib/auth";
 import { backendApiGet } from "@/lib/backend-api";
+import { AdminViewsBarChart } from "@/components/admin/AdminViewsBarChart";
 
 function getLastDays(days: number) {
   const result: string[] = [];
@@ -113,16 +114,16 @@ export default async function AdminHomePage() {
   ];
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-      <p className="mt-1 text-slate-400">
+    <div className="mx-auto w-full max-w-5xl min-w-0">
+      <h1 className="text-xl font-bold text-white sm:text-2xl">Dashboard</h1>
+      <p className="mt-1 text-sm text-slate-400 sm:text-base">
         Update your public resume site. Visitors only see the public homepage; this
         area is protected.
       </p>
       <div className="mt-4 rounded-lg border border-slate-800 bg-slate-950/50 p-4 text-sm text-slate-300">
-        <p>
+        <p className="break-words">
           Public URL:{" "}
-          <Link href={`/${session.username}`} className="text-emerald-300 hover:underline">
+          <Link href={`/${session.username}`} className="break-all text-emerald-300 hover:underline sm:break-normal">
             /{session.username}
           </Link>
         </p>
@@ -131,51 +132,39 @@ export default async function AdminHomePage() {
         </p>
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+      <div className="mt-6 grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
           <p className="text-xs uppercase tracking-wider text-slate-500">Total views</p>
-          <p className="mt-1 text-2xl font-bold text-white">{user?.publicViews ?? 0}</p>
+          <p className="mt-1 text-2xl font-bold text-white tabular-nums">{user?.publicViews ?? 0}</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+        <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
           <p className="text-xs uppercase tracking-wider text-slate-500">Views (7d)</p>
-          <p className="mt-1 text-2xl font-bold text-white">{views7d}</p>
+          <p className="mt-1 text-2xl font-bold text-white tabular-nums">{views7d}</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+        <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
           <p className="text-xs uppercase tracking-wider text-slate-500">Views today</p>
-          <p className="mt-1 text-2xl font-bold text-white">{viewsToday}</p>
+          <p className="mt-1 text-2xl font-bold text-white tabular-nums">{viewsToday}</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+        <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
           <p className="text-xs uppercase tracking-wider text-slate-500">Content entries</p>
-          <p className="mt-1 text-2xl font-bold text-white">{totalContent}</p>
+          <p className="mt-1 text-2xl font-bold text-white tabular-nums">{totalContent}</p>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold text-white">Portfolio views (14 days)</h2>
-            <Link href="/admin/analytics" className="text-xs text-emerald-300 hover:underline">
+      <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-2">
+        <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/60 p-4 sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-2 gap-y-1">
+            <h2 className="text-base font-semibold text-white sm:text-lg">
+              Portfolio views (14 days)
+            </h2>
+            <Link href="/admin/analytics" className="shrink-0 text-xs text-emerald-300 hover:underline">
               Full analytics
             </Link>
           </div>
-          <div
-            className="mt-4 grid items-end gap-2"
-            style={{ gridTemplateColumns: `repeat(${series.length}, minmax(0, 1fr))` }}
-          >
-            {series.map((point: (typeof series)[number]) => (
-              <div key={point.day} className="flex flex-col items-center gap-2">
-                <div
-                  className="w-full rounded-t bg-emerald-500/80"
-                  style={{ height: `${Math.max(8, (point.count / maxCount) * 120)}px` }}
-                  title={`${point.day}: ${point.count} views`}
-                />
-                <span className="text-[10px] text-slate-500">{point.day.slice(5)}</span>
-              </div>
-            ))}
-          </div>
+          <AdminViewsBarChart series={series} maxCount={maxCount} barMaxHeight={120} />
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5">
+        <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/60 p-4 sm:p-5">
           <h2 className="text-lg font-semibold text-white">Content distribution</h2>
           <ul className="mt-4 space-y-3">
             {sectionStats.map((item: (typeof sectionStats)[number]) => (

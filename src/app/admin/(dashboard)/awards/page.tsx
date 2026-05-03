@@ -16,7 +16,7 @@ export default async function AdminAwardsPage({
   });
 
   return (
-    <div className="mx-auto max-w-3xl space-y-10">
+    <div className="mx-auto w-full min-w-0 max-w-3xl space-y-10">
       <div>
         <h1 className="text-2xl font-bold text-white">Awards</h1>
         <p className="mt-1 text-sm text-slate-400">

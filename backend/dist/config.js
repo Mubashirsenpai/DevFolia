@@ -3,16 +3,26 @@ dotenv.config({ path: ".env" });
 dotenv.config({ path: "../.env" });
 function required(name) {
     const value = process.env[name];
-    if (!value) {
+    if (!value?.trim()) {
         throw new Error(`Missing required env var: ${name}`);
     }
     return value;
 }
-/** CORS + redirects; production must set FRONTEND_ORIGIN explicitly. */
-const frontendOrigin = process.env.FRONTEND_ORIGIN?.trim() ||
-    (process.env.NODE_ENV === "production"
-        ? required("FRONTEND_ORIGIN")
-        : "http://localhost:3000");
+/** CORS allowlist; must match the browser origin (scheme + host, no path). */
+function getFrontendOrigin() {
+    const v = process.env.FRONTEND_ORIGIN?.trim() ||
+        process.env.FRONTEND_URL?.trim() ||
+        process.env.CORS_ORIGIN?.trim();
+    if (v)
+        return v.replace(/\/$/, "");
+    if (process.env.NODE_ENV !== "production") {
+        return "http://localhost:3000";
+    }
+    throw new Error("Set your Vercel site origin on Render → Environment → (Web Service) → Environment Variables. " +
+        "Add FRONTEND_ORIGIN=https://YOUR-PROJECT.vercel.app " +
+        "(optional aliases: FRONTEND_URL or CORS_ORIGIN). No path, no trailing slash.");
+}
+const frontendOrigin = getFrontendOrigin();
 export const config = {
     port: Number(process.env.PORT ?? "8080"),
     frontendOrigin,

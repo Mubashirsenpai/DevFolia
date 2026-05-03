@@ -2,7 +2,7 @@ import { AdminDashboardChrome } from "../AdminDashboardChrome";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminDashboardLayout({
+export default async function AdminOnboardingLayout({
   children,
 }: {
   children: React.ReactNode;

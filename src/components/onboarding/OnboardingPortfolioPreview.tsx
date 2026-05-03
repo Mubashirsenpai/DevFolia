@@ -44,12 +44,12 @@ export function OnboardingPortfolioPreview({
 
       {open && (
         <div
-          className="fixed inset-0 z-[100] flex flex-col bg-black/80 p-3 sm:p-6"
+          className="fixed inset-0 z-[100] flex max-h-[100dvh] flex-col bg-black/80 p-2 pt-[env(safe-area-inset-top)] sm:p-6"
           role="dialog"
           aria-modal="true"
           aria-label="Portfolio preview"
         >
-          <div className="mx-auto flex w-full max-w-6xl shrink-0 items-center justify-between gap-3 rounded-t-xl border border-slate-700 border-b-0 bg-slate-900/95 px-4 py-3">
+          <div className="mx-auto flex w-full max-w-6xl shrink-0 flex-wrap items-center justify-between gap-3 rounded-t-xl border border-slate-700 border-b-0 bg-slate-900/95 px-3 py-3 sm:flex-nowrap sm:px-4">
             <div>
               <p className="text-sm font-semibold text-white">Preview</p>
               <p className="text-xs text-slate-400">
@@ -58,7 +58,7 @@ export function OnboardingPortfolioPreview({
                   : "This matches your current public page content."}
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               {canPublish && (
                 <form action={completeOnboarding}>
                   <button
@@ -78,7 +78,7 @@ export function OnboardingPortfolioPreview({
               </button>
             </div>
           </div>
-          <div className="mx-auto w-full max-w-6xl flex-1 overflow-y-auto overflow-x-hidden rounded-b-xl border border-slate-700 border-t-0 bg-[var(--background,#020617)]">
+          <div className="mx-auto mb-[env(safe-area-inset-bottom)] w-full max-w-6xl min-h-0 flex-1 overflow-y-auto overscroll-contain overflow-x-hidden rounded-b-xl border border-slate-700 border-t-0 bg-[var(--background,#020617)]">
             {children}
           </div>
         </div>

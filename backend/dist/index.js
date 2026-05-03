@@ -25,6 +25,7 @@ app.use("/portfolio", portfolioRouter);
 app.use("/analytics", analyticsRouter);
 app.use("/public", publicRouter);
 app.use("/account", accountRouter);
-app.listen(config.port, () => {
-    console.log(`DevFolia backend listening on :${config.port}`);
+/** Render/load balancers need a public bind on PORT (not localhost-only). */
+app.listen(config.port, "0.0.0.0", () => {
+    console.log(`DevFolia backend listening on 0.0.0.0:${config.port}`);
 });

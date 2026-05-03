@@ -24,7 +24,7 @@ export default async function AdminSettingsPage({
   const currentTheme = profile?.theme ?? "midnight";
   const defaultTheme = allowedThemes.includes(currentTheme) ? currentTheme : allowedThemes[0];
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto w-full min-w-0 max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Account settings</h1>
         <p className="mt-1 text-sm text-slate-400">

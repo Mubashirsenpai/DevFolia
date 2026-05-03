@@ -14,7 +14,7 @@ export default async function AdminProfilePage({
   const profile = await ensureProfile(session.sub, session.username);
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto w-full min-w-0 max-w-2xl">
       <h1 className="text-2xl font-bold text-white">Profile</h1>
       <p className="mt-1 text-sm text-slate-400">
         This appears in the hero and contact area on your public site.
@@ -41,6 +41,7 @@ export default async function AdminProfilePage({
           fieldName="resumeUrl"
           label="Resume / CV PDF"
           initialUrl={profile.resumeUrl}
+          portfolioDisplayName={profile.displayName}
         />
 
         <div className="grid gap-4 sm:grid-cols-2">

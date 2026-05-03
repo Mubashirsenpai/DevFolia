@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIpFromHeaders } from "@/lib/rate-limit";
+import { isReservedUsername } from "@/lib/reserved-usernames";
 
 function normalizeUsername(raw: string): string {
   return raw.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
@@ -28,6 +29,14 @@ export async function GET(request: Request) {
       available: false,
       normalized: username,
       reason: "Username must be at least 3 characters.",
+    });
+  }
+
+  if (isReservedUsername(username)) {
+    return NextResponse.json({
+      available: false,
+      normalized: username,
+      reason: "That username is reserved. Try another.",
     });
   }
 

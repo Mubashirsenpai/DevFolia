@@ -13,13 +13,18 @@ function required(name: string): string {
 
 /** CORS allowlist; must match the browser origin (scheme + host, no path). */
 function getFrontendOrigin(): string {
-  const v = process.env.FRONTEND_ORIGIN?.trim();
+  const v =
+    process.env.FRONTEND_ORIGIN?.trim() ||
+    process.env.FRONTEND_URL?.trim() ||
+    process.env.CORS_ORIGIN?.trim();
   if (v) return v.replace(/\/$/, "");
   if (process.env.NODE_ENV !== "production") {
     return "http://localhost:3000";
   }
   throw new Error(
-    "FRONTEND_ORIGIN is required in production. In Render → Environment, set FRONTEND_ORIGIN to your Vercel URL (example: https://your-app.vercel.app). No trailing slash.",
+    "Set your Vercel site origin on Render → Environment → (Web Service) → Environment Variables. " +
+      "Add FRONTEND_ORIGIN=https://YOUR-PROJECT.vercel.app " +
+      "(optional aliases: FRONTEND_URL or CORS_ORIGIN). No path, no trailing slash.",
   );
 }
 

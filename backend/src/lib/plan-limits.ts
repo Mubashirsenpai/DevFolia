@@ -17,11 +17,6 @@ export function normalizePlan(raw: string | null | undefined): UserPlan {
   return "FREE";
 }
 
-function getBusinessMaxItems() {
-  const n = Number(process.env.BUSINESS_MAX_ITEMS_PER_SECTION ?? "100");
-  return Number.isFinite(n) && n > 0 ? Math.min(n, 100000) : 100;
-}
-
 export function allowedThemesForPlan(plan: UserPlan): string[] {
   if (plan === "FREE") return ["midnight", "emerald"];
   if (plan === "PRO") return ["midnight", "emerald", "sunset", "neon"];

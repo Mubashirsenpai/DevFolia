@@ -51,7 +51,7 @@ Backend scaffold for splitting architecture:
 - Build command: `npm install && npm run prisma:generate && npm run prisma:migrate && npm run build`
 - Start command: `npm run start`
 - Environment variables (all required for a successful start):
-  - `FRONTEND_ORIGIN` — **your Vercel site origin only** (e.g. `https://your-app.vercel.app`). No path, no trailing slash. Without this, the process exits on boot.
+  - `FRONTEND_ORIGIN` — **your Vercel site origin only** (e.g. `https://your-app.vercel.app`). Same as `FRONTEND_URL` or `CORS_ORIGIN` if you prefer. No path, no trailing slash. Without one of these, the process exits on boot.
   - `NODE_ENV=production`
   - `PORT` (Render sets this automatically)
   - `DATABASE_URL=<neon-pooled-url>` (recommended for runtime)

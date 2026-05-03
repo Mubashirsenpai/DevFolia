@@ -22,7 +22,7 @@ accountRouter.put("/settings", async (req: AuthedRequest, res) => {
   }
   const userId = req.session!.sub;
   const plan = await getUserPlan(userId);
-  let billingEmail =
+  const billingEmail =
     typeof parsed.data.billingEmail === "string"
       ? parsed.data.billingEmail.trim().toLowerCase() || null
       : parsed.data.billingEmail ?? null;

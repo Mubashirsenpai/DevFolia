@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Explicit scan roots (helps Windows / monorepo paths where auto-detection may miss TSX). */
+@source "../**/*.ts";
+@source "../**/*.tsx";
+@source "../**/*.js";
+@source "../**/*.jsx";
+
 :root {
   --background: #070b14;
   --foreground: #e8edf7;
@@ -15,6 +21,11 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {

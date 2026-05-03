@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { hashPassword, verifyPassword } from "../lib/password.js";
 import { signSession } from "../lib/session.js";
 import { requireAuth, type AuthedRequest } from "../middleware/auth.js";
+import { isReservedUsername } from "../lib/reserved-usernames.js";
 
 export const authRouter = Router();
 
@@ -77,6 +78,10 @@ authRouter.post("/signup", signupThrottle, async (req, res) => {
   const username = normalizeUsername(parsed.data.username);
   if (username.length < 3) {
     return res.status(400).json({ error: "Username must be at least 3 characters." });
+  }
+
+  if (isReservedUsername(username)) {
+    return res.status(400).json({ error: "Username is reserved." });
   }
 
   const existing = await prisma.user.findFirst({

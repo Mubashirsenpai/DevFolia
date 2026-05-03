@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    /** Node CJS helpers — require() is intentional */
+    "scripts/**",
+    /** Compiled backend output should not be linted */
+    "backend/dist/**",
   ]),
 ]);
 

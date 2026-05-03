@@ -46,7 +46,7 @@ export function CopyPhoneButton({ phone }: Props) {
       onMouseLeave={cancelHoldCopy}
       onTouchStart={startHoldCopy}
       onTouchEnd={cancelHoldCopy}
-      className="inline-flex items-center rounded-lg border border-slate-600 px-4 py-2.5 text-sm font-medium text-white hover:border-emerald-500/50 hover:text-emerald-200"
+      className="inline-flex min-h-11 items-center rounded-lg border border-slate-600 px-4 py-2 text-sm font-medium text-white hover:border-emerald-500/50 hover:text-emerald-200"
       title="Click or hold to copy number"
     >
       {copied ? "Copied" : phone}

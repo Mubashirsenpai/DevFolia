@@ -18,21 +18,32 @@ const links = [
   { href: "/admin/settings", label: "Settings" },
 ];
 
-export function AdminNav({ showSuperAdmin = false }: { showSuperAdmin?: boolean }) {
+export function AdminNav({
+  showSuperAdmin = false,
+  onNavigate,
+}: {
+  showSuperAdmin?: boolean;
+  /** Close mobile drawer after navigation. */
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   const navLinks = showSuperAdmin
     ? [...links, { href: "/admin/super", label: "Super Admin" }]
     : links;
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-slate-800 bg-slate-950/80">
-      <div className="border-b border-slate-800 p-4">
+    <div
+      role="navigation"
+      aria-label="Admin sections"
+      className="flex h-full min-h-0 w-full flex-col bg-slate-950/80 lg:bg-transparent"
+    >
+      <div className="shrink-0 border-b border-slate-800 p-4 pt-[max(1rem,env(safe-area-inset-top))] lg:pt-4">
         <p className="text-xs font-semibold uppercase tracking-widest text-emerald-400">
           DEVFOLIA
         </p>
         <p className="mt-1 text-sm text-slate-400">Content manager</p>
       </div>
-      <nav className="flex flex-1 flex-col gap-0.5 p-2">
+      <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain px-2 py-2">
         {navLinks.map((l) => {
           const active =
             l.href === "/admin"
@@ -42,7 +53,8 @@ export function AdminNav({ showSuperAdmin = false }: { showSuperAdmin?: boolean 
             <Link
               key={l.href}
               href={l.href}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+              onClick={() => onNavigate?.()}
+              className={`min-h-11 rounded-lg px-3 py-2.5 text-sm font-medium leading-snug transition lg:min-h-10 lg:py-2 ${
                 active
                   ? "bg-emerald-600/20 text-emerald-300"
                   : "text-slate-300 hover:bg-slate-800/80"
@@ -53,22 +65,23 @@ export function AdminNav({ showSuperAdmin = false }: { showSuperAdmin?: boolean 
           );
         })}
       </nav>
-      <div className="border-t border-slate-800 p-2">
+      <div className="shrink-0 border-t border-slate-800 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <form action={logoutAction}>
           <button
             type="submit"
-            className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-400 hover:bg-slate-800 hover:text-white"
+            className="min-h-11 w-full rounded-lg px-3 py-2.5 text-left text-sm text-slate-400 hover:bg-slate-800 hover:text-white lg:min-h-10 lg:py-2"
           >
             Log out
           </button>
         </form>
         <Link
           href="/"
-          className="mt-1 block rounded-lg px-3 py-2 text-sm text-slate-500 hover:text-emerald-400"
+          onClick={() => onNavigate?.()}
+          className="mt-1 flex min-h-11 items-center rounded-lg px-3 py-2.5 text-sm text-slate-500 hover:text-emerald-400 lg:min-h-10 lg:py-2"
         >
           View site →
         </Link>
       </div>
-    </aside>
+    </div>
   );
 }

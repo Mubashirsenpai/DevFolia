@@ -13,7 +13,7 @@ export default async function AdminLoginPage({
   if (session) redirect(from && from.startsWith("/") ? from : "/admin");
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-slate-950 px-4 py-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
       <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-xl backdrop-blur">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
           DevFolia

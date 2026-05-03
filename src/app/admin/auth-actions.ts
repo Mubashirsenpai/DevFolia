@@ -20,6 +20,7 @@ import { sendEmail } from "@/lib/mailer";
 import { logPlatformEvent } from "@/lib/platform-events";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getRequestIpForRateLimit } from "@/lib/request-ip";
+import { isReservedUsername } from "@/lib/reserved-usernames";
 
 export async function loginAction(
   _prev: { error?: string } | undefined,
@@ -82,6 +83,9 @@ export async function signupAction(
   if (!email || !email.includes("@")) return { error: "Enter a valid email." };
   if (username.length < 3) {
     return { error: "Username must be at least 3 characters." };
+  }
+  if (isReservedUsername(username)) {
+    return { error: "That username is reserved. Try another." };
   }
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };

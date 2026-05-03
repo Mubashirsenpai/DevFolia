@@ -33,7 +33,7 @@ export default async function SuperAdminPage() {
     ]);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto w-full min-w-0 max-w-5xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Super Admin Dashboard</h1>
         <p className="mt-1 text-sm text-slate-400">
@@ -41,20 +41,20 @@ export default async function SuperAdminPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
           <p className="text-xs uppercase tracking-wider text-slate-500">Total users</p>
           <p className="mt-2 text-2xl font-bold text-white">{totalUsers}</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+        <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
           <p className="text-xs uppercase tracking-wider text-slate-500">Published profiles</p>
           <p className="mt-2 text-2xl font-bold text-white">{publishedProfiles}</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+        <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
           <p className="text-xs uppercase tracking-wider text-slate-500">Paid subscribers</p>
           <p className="mt-2 text-2xl font-bold text-white">{activeSubscribers}</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
+        <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/50 p-4">
           <p className="text-xs uppercase tracking-wider text-slate-500">New users (7d)</p>
           <p className="mt-2 text-2xl font-bold text-white">{recentSignups}</p>
         </div>
@@ -65,13 +65,15 @@ export default async function SuperAdminPage() {
         {eventStats.length === 0 ? (
           <p className="mt-3 text-sm text-slate-500">No tracked events yet.</p>
         ) : (
-          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          <ul className="mt-4 grid min-w-0 gap-2 sm:grid-cols-2">
             {eventStats.map((evt: (typeof eventStats)[number]) => (
               <li
                 key={evt.type}
-                className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2 text-sm"
+                className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2 text-sm"
               >
-                <span className="text-slate-300">{evt.type}</span>
+                <span className="min-w-0 truncate text-slate-300" title={evt.type}>
+                  {evt.type}
+                </span>
                 <span className="font-semibold text-emerald-300">{evt._count._all}</span>
               </li>
             ))}

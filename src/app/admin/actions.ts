@@ -139,7 +139,8 @@ export async function uploadResumePdf(
   try {
     const result = await uploadToCloudinary(buf, {
       folder: "devfolia/resumes",
-      publicId: randomUUID(),
+      /** `.pdf` in public_id preserves correct raw delivery path / Content-Type hints. */
+      publicId: `${randomUUID()}.pdf`,
       resourceType: "raw",
     });
     url = result.secureUrl;

@@ -2,14 +2,20 @@
 
 import { useState } from "react";
 import { uploadResumePdf } from "@/app/admin/actions";
+import {
+  cvPdfFilename,
+  resumePdfForcedDownloadUrl,
+  resumePdfViewerUrl,
+} from "@/lib/cv-links";
 
 type Props = {
   fieldName: string;
   label: string;
   initialUrl?: string | null;
+  portfolioDisplayName?: string | null;
 };
 
-export function ResumeUploadField({ fieldName, label, initialUrl }: Props) {
+export function ResumeUploadField({ fieldName, label, initialUrl, portfolioDisplayName }: Props) {
   const [url, setUrl] = useState(initialUrl ?? "");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -46,14 +52,25 @@ export function ResumeUploadField({ fieldName, label, initialUrl }: Props) {
       {busy && <p className="text-xs text-[var(--muted)]">Uploading…</p>}
       {message && <p className="text-xs text-amber-300">{message}</p>}
       {url ? (
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex text-xs text-emerald-300 underline decoration-emerald-400/60 underline-offset-2 hover:text-emerald-200"
-        >
-          Preview uploaded resume
-        </a>
+        <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+          <a
+            href={resumePdfViewerUrl(url)}
+            target="_blank"
+            rel="noreferrer"
+            className="text-emerald-300 underline decoration-emerald-400/60 underline-offset-2 hover:text-emerald-200"
+          >
+            Preview PDF
+          </a>
+          <a
+            href={resumePdfForcedDownloadUrl(url, portfolioDisplayName)}
+            download={cvPdfFilename(portfolioDisplayName)}
+            target="_blank"
+            rel="noreferrer"
+            className="text-emerald-300 underline decoration-emerald-400/60 underline-offset-2 hover:text-emerald-200"
+          >
+            Download PDF
+          </a>
+        </p>
       ) : null}
     </div>
   );

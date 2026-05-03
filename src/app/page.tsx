@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 export default function HomePage() {
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--background)]/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
+      <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--background)]/90 pt-[env(safe-area-inset-top)] backdrop-blur">
+        <div className="mx-auto flex w-full max-w-6xl min-w-0 items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
           <Link href="/" aria-label="DevFolia home">
             <DevFoliaLogo />
           </Link>

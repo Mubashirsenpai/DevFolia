@@ -26,7 +26,7 @@ export async function getPublicPortfolioByUsername(username: string) {
       );
       if (response.ok) {
         const payload = (await response.json()) as { data?: unknown };
-        return (payload.data ?? null) as {
+        const fromApi = (payload.data ?? null) as {
           user: { id: string; username: string };
           profile: Awaited<ReturnType<typeof prisma.profile.findUnique>>;
           projects: Awaited<ReturnType<typeof prisma.project.findMany>>;
@@ -36,8 +36,10 @@ export async function getPublicPortfolioByUsername(username: string) {
           experience: Awaited<ReturnType<typeof prisma.experience.findMany>>;
           education: Awaited<ReturnType<typeof prisma.education.findMany>>;
         } | null;
+        // Only short-circuit when the API returned a portfolio. Otherwise fall
+        // through to Prisma (same DB or cutover — avoids false 404s).
+        if (fromApi?.user?.id) return fromApi;
       }
-      if (response.status === 404) return null;
     } catch {
       // Fall back to local Prisma path during migration/cutover.
     }

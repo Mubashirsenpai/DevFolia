@@ -13,7 +13,7 @@ const links = [
 export function MarketingMobileMenu() {
   return (
     <details className="relative sm:hidden">
-      <summary className="inline-flex h-10 w-10 list-none items-center justify-center rounded-lg border border-slate-700 text-slate-200 hover:border-emerald-500/40 hover:text-emerald-300">
+      <summary className="inline-flex h-11 w-11 list-none items-center justify-center rounded-lg border border-slate-700 text-slate-200 hover:border-emerald-500/40 hover:text-emerald-300">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
@@ -25,12 +25,12 @@ export function MarketingMobileMenu() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 12h16M4 17h16" />
         </svg>
       </summary>
-      <div className="absolute right-0 top-12 z-30 w-48 rounded-xl border border-slate-800 bg-slate-950/95 p-1 shadow-xl backdrop-blur">
+      <div className="absolute right-0 top-12 z-30 max-h-[min(70vh,20rem)] w-[min(12rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-xl border border-slate-800 bg-slate-950/95 p-1 pb-[env(safe-area-inset-bottom)] shadow-xl backdrop-blur">
         {links.map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className="block rounded-lg px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 hover:text-emerald-300"
+            className="flex min-h-11 items-center rounded-lg px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800 hover:text-emerald-300"
           >
             {item.label}
           </Link>

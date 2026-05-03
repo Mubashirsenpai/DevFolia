@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { backendApiGet } from "@/lib/backend-api";
+import { AdminViewsBarChart } from "@/components/admin/AdminViewsBarChart";
 
 function getLastDays(days: number) {
   const result: string[] = [];
@@ -42,7 +43,7 @@ export default async function AdminAnalyticsPage() {
   const maxCount = Math.max(1, ...series.map((s: (typeof series)[number]) => s.count));
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-3xl min-w-0 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Analytics</h1>
         <p className="mt-1 text-sm text-slate-400">
@@ -53,11 +54,14 @@ export default async function AdminAnalyticsPage() {
       <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-6">
         <p className="text-sm text-slate-300">
           Public profile:{" "}
-          <Link href={`/${session.username}`} className="text-emerald-300 hover:underline">
+          <Link
+            href={`/${session.username}`}
+            className="break-all text-emerald-300 hover:underline sm:break-normal"
+          >
             /{session.username}
           </Link>
         </p>
-        <p className="mt-2 text-3xl font-bold text-white">
+        <p className="mt-2 break-all text-3xl font-bold text-white tabular-nums">
           {user?.publicViews ?? 0}
         </p>
         <p className="text-xs uppercase tracking-wider text-slate-500">
@@ -65,25 +69,9 @@ export default async function AdminAnalyticsPage() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-6">
-        <h2 className="text-lg font-semibold text-white">Last 14 days</h2>
-        <div
-          className="mt-4 grid items-end gap-2"
-          style={{ gridTemplateColumns: `repeat(${series.length}, minmax(0, 1fr))` }}
-        >
-          {series.map((point: (typeof series)[number]) => (
-            <div key={point.day} className="flex flex-col items-center gap-2">
-              <div
-                className="w-full rounded-t bg-emerald-500/80"
-                style={{ height: `${Math.max(6, (point.count / maxCount) * 120)}px` }}
-                title={`${point.day}: ${point.count} views`}
-              />
-              <span className="text-[10px] text-slate-500">
-                {point.day.slice(5)}
-              </span>
-            </div>
-          ))}
-        </div>
+      <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/50 p-4 sm:p-6">
+        <h2 className="text-base font-semibold text-white sm:text-lg">Last 14 days</h2>
+        <AdminViewsBarChart series={series} maxCount={maxCount} barMaxHeight={120} />
       </div>
     </div>
   );

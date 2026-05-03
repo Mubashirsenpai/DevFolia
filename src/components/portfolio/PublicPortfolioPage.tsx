@@ -44,6 +44,23 @@ function absoluteUrl(value?: string | null): string {
   return `https://${raw}`;
 }
 
+function PortfolioSectionHeader({
+  title,
+  description,
+}: {
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="border-b border-[var(--border)] pb-4">
+      <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">{title}</h2>
+      {description ? (
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">{description}</p>
+      ) : null}
+    </div>
+  );
+}
+
 export function PublicPortfolioPage({ data }: { data: PortfolioData }) {
   const { profile, projects, skills, awards, leadership, experience, education } = data;
   const socialLinks = [
@@ -59,12 +76,14 @@ export function PublicPortfolioPage({ data }: { data: PortfolioData }) {
 
   return (
     <div className="flex min-h-full flex-1 flex-col" style={themeStyles}>
-      <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--background)]/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <span className="text-sm font-semibold tracking-tight text-[var(--accent)]">
+      <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--background)]/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
+          <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight text-[var(--accent)]">
             {profile.displayName}
           </span>
-          <MobileNavMenu />
+          <div className="shrink-0">
+            <MobileNavMenu />
+          </div>
           <nav className="hidden flex-wrap items-center gap-4 text-sm text-[var(--muted)] sm:flex">
             <a href="#projects" className="hover:text-white">Projects</a>
             <a href="#skills" className="hover:text-white">Skills</a>
@@ -74,17 +93,19 @@ export function PublicPortfolioPage({ data }: { data: PortfolioData }) {
           </nav>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:px-6 sm:py-16">
+      <main className="mx-auto w-full max-w-5xl flex-1 overflow-x-hidden px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-14 md:py-16">
         <section className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-medium uppercase tracking-[0.25em] text-[color:color-mix(in_srgb,var(--accent)_88%,white)]">Portfolio & CV</p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight text-white sm:text-5xl">{profile.displayName}</h1>
-            <p className="mt-3 text-xl text-[var(--muted)]">{profile.headline}</p>
+            <h1 className="mt-3 text-balance text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl">
+              {profile.displayName}
+            </h1>
+            <p className="mt-3 break-words text-lg text-[var(--muted)] sm:text-xl">{profile.headline}</p>
             <p className="mt-6 max-w-2xl whitespace-pre-wrap text-base leading-relaxed text-slate-300">{profile.bio}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <CvMenuButton resumeUrl={profile.resumeUrl} />
-              {profile.email && <a href={`mailto:${profile.email}`} className="inline-flex items-center rounded-lg border border-slate-600 px-4 py-2.5 text-sm font-medium text-white hover:border-emerald-500/50 hover:text-emerald-200">Email me</a>}
-              {profile.githubUrl && <a href={absoluteUrl(profile.githubUrl)} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-lg border border-slate-600 px-4 py-2.5 text-sm font-medium text-white hover:border-emerald-500/50 hover:text-emerald-200">GitHub</a>}
+              <CvMenuButton resumeUrl={profile.resumeUrl} portfolioDisplayName={profile.displayName} />
+              {profile.email && <a href={`mailto:${profile.email}`} className="inline-flex min-h-11 items-center rounded-lg border border-slate-600 px-4 py-2 text-sm font-medium text-white hover:border-emerald-500/50 hover:text-emerald-200">Email me</a>}
+              {profile.githubUrl && <a href={absoluteUrl(profile.githubUrl)} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-lg border border-slate-600 px-4 py-2 text-sm font-medium text-white hover:border-emerald-500/50 hover:text-emerald-200">GitHub</a>}
               {profile.phone && <CopyPhoneButton phone={profile.phone} />}
             </div>
             <ul className="mt-6 flex flex-wrap gap-4 text-sm text-slate-400">
@@ -132,8 +153,12 @@ export function PublicPortfolioPage({ data }: { data: PortfolioData }) {
           </div>
         </section>
         <section id="projects" className="mt-24 scroll-mt-24">
+          <PortfolioSectionHeader
+            title="Projects"
+            description="Selected work, products, and experiments."
+          />
           {projects.length === 0 ? (
-            <p className="mt-8 text-slate-500">Projects will appear here soon.</p>
+            <p className="mt-10 text-slate-500">Projects will appear here soon.</p>
           ) : (
             <ul className="mt-10 grid gap-8 sm:grid-cols-2">
               {projects.map((p) => (
@@ -155,10 +180,145 @@ export function PublicPortfolioPage({ data }: { data: PortfolioData }) {
             </ul>
           )}
         </section>
-        <section id="skills" className="mt-24 scroll-mt-24">{skills.length === 0 ? <p className="mt-8 text-slate-500">Skills will appear here soon.</p> : <ul className="mt-10 grid gap-6 sm:grid-cols-2">{skills.map((s) => (<li key={s.id} className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5"><div className="flex items-start justify-between gap-2"><div><h3 className="font-semibold text-white">{s.name}</h3>{s.category && <p className="text-xs uppercase tracking-wider text-slate-500">{s.category}</p>}</div><span className="text-sm font-mono text-[var(--accent)]">{s.level}%</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-gradient-to-r" style={{ width: `${s.level}%`, backgroundImage: "linear-gradient(to right, var(--skill-bar-from, #059669), var(--skill-bar-to, #34d399))" }} /></div>{s.exampleNote && <p className="mt-3 text-sm leading-relaxed text-slate-400">{s.exampleNote}</p>}</li>))}</ul>}</section>
-        <section id="resume" className="mt-24 scroll-mt-24"><div className="border-b border-[var(--border)] pb-4"><h2 className="text-2xl font-bold text-white">Experience & education</h2><p className="mt-1 text-sm text-[var(--muted)]">Professional timeline of experience and education.</p></div><div className="mt-10 grid gap-12 lg:grid-cols-2"><div><h3 className="text-sm font-semibold uppercase tracking-widest text-[var(--accent)]">Experience</h3>{experience.length === 0 ? <p className="mt-4 text-sm text-slate-500">No entries yet.</p> : <ul className="mt-6 space-y-8">{experience.map((x) => (<li key={x.id} className="border-l-2 pl-4" style={{ borderColor: "var(--experience-rail, rgba(16,185,129,0.45))" }}><p className="font-semibold text-white">{x.title}</p><p className="text-sm text-[var(--accent-soft)]">{x.company}</p><p className="text-xs text-slate-500">{x.period}{x.location ? ` · ${x.location}` : ""}</p><p className="mt-2 whitespace-pre-wrap text-sm text-slate-400">{x.description}</p></li>))}</ul>}</div><div><h3 className="text-sm font-semibold uppercase tracking-widest text-[var(--accent)]">Education</h3>{education.length === 0 ? <p className="mt-4 text-sm text-slate-500">No entries yet.</p> : <ul className="mt-6 space-y-8">{education.map((e) => (<li key={e.id} className="border-l-2 pl-4" style={{ borderColor: "var(--education-rail, rgba(56,189,248,0.45))" }}><p className="font-semibold text-white">{e.school}</p><p className="text-sm text-[color:color-mix(in_srgb,var(--accent-soft)_80%,white)]">{e.degree}</p><p className="text-xs text-slate-500">{e.period}</p>{e.details && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-400">{e.details}</p>}</li>))}</ul>}</div></div></section>
-        <section id="awards" className="mt-24 scroll-mt-24">{awards.length === 0 ? <p className="mt-8 text-slate-500">No awards listed yet.</p> : <ul className="mt-10 grid gap-6 sm:grid-cols-2">{awards.map((a) => (<li key={a.id} className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]">{a.imageUrl && <div className="relative aspect-video w-full"><Image src={a.imageUrl} alt="" fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover" /></div>}<div className="p-5"><h3 className="font-semibold text-white">{a.title}</h3><p className="text-sm text-[var(--accent-soft)]">{a.issuer}</p>{a.year && <p className="mt-1 text-xs text-slate-500">{a.year}</p>}{a.description && <p className="mt-3 text-sm text-slate-400">{a.description}</p>}</div></li>))}</ul>}</section>
-        <section id="leadership" className="mt-24 scroll-mt-24">{leadership.length === 0 ? <p className="mt-8 text-slate-500">No leadership entries yet.</p> : <ul className="mt-10 grid gap-6 sm:grid-cols-2">{leadership.map((l) => (<li key={l.id} className="flex gap-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">{l.imageUrl && <Image src={l.imageUrl} alt="" width={80} height={80} className="h-20 w-20 shrink-0 rounded-xl object-cover" />}<div><h3 className="font-semibold text-white">{l.role}</h3><p className="text-sm text-slate-300">{l.organization}</p><p className="mt-1 text-xs text-slate-500">{l.period}</p>{l.description && <p className="mt-2 text-sm text-slate-400">{l.description}</p>}</div></li>))}</ul>}</section>
+        <section id="skills" className="mt-24 scroll-mt-24">
+          <PortfolioSectionHeader
+            title="Skills"
+            description="Tools, technologies, and how comfortable I am with each."
+          />
+          {skills.length === 0 ? (
+            <p className="mt-10 text-slate-500">Skills will appear here soon.</p>
+          ) : (
+            <ul className="mt-10 grid gap-6 sm:grid-cols-2">
+              {skills.map((s) => (
+                <li key={s.id} className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="font-semibold text-white">{s.name}</h3>
+                      {s.category && <p className="text-xs uppercase tracking-wider text-slate-500">{s.category}</p>}
+                    </div>
+                    <span className="text-sm font-mono text-[var(--accent)]">{s.level}%</span>
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r"
+                      style={{
+                        width: `${s.level}%`,
+                        backgroundImage:
+                          "linear-gradient(to right, var(--skill-bar-from, #059669), var(--skill-bar-to, #34d399))",
+                      }}
+                    />
+                  </div>
+                  {s.exampleNote && <p className="mt-3 text-sm leading-relaxed text-slate-400">{s.exampleNote}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <section id="resume" className="mt-24 scroll-mt-24">
+          <PortfolioSectionHeader
+            title="Resume"
+            description="Experience and education—where I’ve worked and what I studied."
+          />
+          <div className="mt-10 grid gap-12 lg:grid-cols-2">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-widest text-[var(--accent)]">Experience</h3>
+              {experience.length === 0 ? (
+                <p className="mt-4 text-sm text-slate-500">No entries yet.</p>
+              ) : (
+                <ul className="mt-6 space-y-8">
+                  {experience.map((x) => (
+                    <li
+                      key={x.id}
+                      className="border-l-2 pl-4"
+                      style={{ borderColor: "var(--experience-rail, rgba(16,185,129,0.45))" }}
+                    >
+                      <p className="font-semibold text-white">{x.title}</p>
+                      <p className="text-sm text-[var(--accent-soft)]">{x.company}</p>
+                      <p className="text-xs text-slate-500">
+                        {x.period}
+                        {x.location ? ` · ${x.location}` : ""}
+                      </p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-slate-400">{x.description}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-widest text-[var(--accent)]">Education</h3>
+              {education.length === 0 ? (
+                <p className="mt-4 text-sm text-slate-500">No entries yet.</p>
+              ) : (
+                <ul className="mt-6 space-y-8">
+                  {education.map((e) => (
+                    <li
+                      key={e.id}
+                      className="border-l-2 pl-4"
+                      style={{ borderColor: "var(--education-rail, rgba(56,189,248,0.45))" }}
+                    >
+                      <p className="font-semibold text-white">{e.school}</p>
+                      <p className="text-sm text-[color:color-mix(in_srgb,var(--accent-soft)_80%,white)]">{e.degree}</p>
+                      <p className="text-xs text-slate-500">{e.period}</p>
+                      {e.details && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-400">{e.details}</p>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </section>
+        <section id="awards" className="mt-24 scroll-mt-24">
+          <PortfolioSectionHeader
+            title="Awards"
+            description="Recognition, certifications, and highlights."
+          />
+          {awards.length === 0 ? (
+            <p className="mt-10 text-slate-500">No awards listed yet.</p>
+          ) : (
+            <ul className="mt-10 grid gap-6 sm:grid-cols-2">
+              {awards.map((a) => (
+                <li key={a.id} className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)]">
+                  {a.imageUrl && (
+                    <div className="relative aspect-video w-full">
+                      <Image src={a.imageUrl} alt="" fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover" />
+                    </div>
+                  )}
+                  <div className="p-5">
+                    <h3 className="font-semibold text-white">{a.title}</h3>
+                    <p className="text-sm text-[var(--accent-soft)]">{a.issuer}</p>
+                    {a.year && <p className="mt-1 text-xs text-slate-500">{a.year}</p>}
+                    {a.description && <p className="mt-3 text-sm text-slate-400">{a.description}</p>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <section id="leadership" className="mt-24 scroll-mt-24">
+          <PortfolioSectionHeader
+            title="Leadership"
+            description="Community roles, organizations, and volunteer leadership."
+          />
+          {leadership.length === 0 ? (
+            <p className="mt-10 text-slate-500">No leadership entries yet.</p>
+          ) : (
+            <ul className="mt-10 grid gap-6 sm:grid-cols-2">
+              {leadership.map((l) => (
+                <li key={l.id} className="flex flex-col gap-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 sm:flex-row sm:items-start">
+                  {l.imageUrl && (
+                    <Image src={l.imageUrl} alt="" width={80} height={80} className="mx-auto h-20 w-20 shrink-0 rounded-xl object-cover sm:mx-0" />
+                  )}
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-white">{l.role}</h3>
+                    <p className="text-sm text-slate-300">{l.organization}</p>
+                    <p className="mt-1 text-xs text-slate-500">{l.period}</p>
+                    {l.description && <p className="mt-2 text-sm text-slate-400">{l.description}</p>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </main>
       <footer className="border-t border-[var(--border)] py-8 text-center text-xs text-slate-600">
         Built with{" "}
