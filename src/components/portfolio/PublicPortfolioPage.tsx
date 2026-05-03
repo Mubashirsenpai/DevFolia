@@ -7,7 +7,7 @@ import { MobileNavMenu } from "@/components/portfolio/MobileNavMenu";
 import { StatusBadge } from "@/components/portfolio/StatusBadge";
 import { getPortfolioThemeDefinition } from "@/lib/portfolio-themes";
 
-type PortfolioData = {
+export type PortfolioData = {
   profile: {
     displayName: string;
     headline: string;
@@ -34,6 +34,11 @@ type PortfolioData = {
   leadership: Array<{ id: string; role: string; organization: string; period: string; description: string; imageUrl: string | null }>;
   experience: Array<{ id: string; title: string; company: string; location: string | null; period: string; description: string }>;
   education: Array<{ id: string; school: string; degree: string; period: string; details: string }>;
+};
+
+/** Public + preview routes: portfolio blocks plus owner user (for metadata / consistency). */
+export type PublicPortfolioPayload = PortfolioData & {
+  user: { id: string; username: string };
 };
 
 function absoluteUrl(value?: string | null): string {

@@ -17,7 +17,9 @@ const prisma =
   });
 
 if (process.env.NODE_ENV === "development" && !globalForPrisma.prisma) {
-  prisma.$on("error", (e) => {
+  type LogEvent = { message: string };
+  const client = prisma as PrismaClient & { $on(event: "error", cb: (e: LogEvent) => void): void };
+  client.$on("error", (e: LogEvent) => {
     if (isBenignPoolerDisconnect(e.message)) return;
     console.error("prisma:error", e.message);
   });

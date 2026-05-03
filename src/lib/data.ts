@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { logPlatformEvent } from "@/lib/platform-events";
 import type { Prisma } from "@prisma/client";
 import { getPublicApiBase } from "@/lib/remote-api";
+import type { PublicPortfolioPayload } from "@/components/portfolio/PublicPortfolioPage";
 
 export async function ensureProfile(userId: string, fallbackName = "Your Name") {
   return prisma.profile.upsert({
@@ -16,7 +17,9 @@ export async function ensureProfile(userId: string, fallbackName = "Your Name") 
   });
 }
 
-export async function getPublicPortfolioByUsername(username: string) {
+export async function getPublicPortfolioByUsername(
+  username: string,
+): Promise<PublicPortfolioPayload | null> {
   const backendApi = getPublicApiBase();
   if (backendApi) {
     try {
@@ -36,9 +39,10 @@ export async function getPublicPortfolioByUsername(username: string) {
           experience: Awaited<ReturnType<typeof prisma.experience.findMany>>;
           education: Awaited<ReturnType<typeof prisma.education.findMany>>;
         } | null;
-        // Only short-circuit when the API returned a portfolio. Otherwise fall
-        // through to Prisma (same DB or cutover — avoids false 404s).
-        if (fromApi?.user?.id) return fromApi;
+        // Only short-circuit when the API returned a full portfolio (PublicPortfolioPage needs profile).
+        if (fromApi?.user?.id && fromApi.profile) {
+          return fromApi as PublicPortfolioPayload;
+        }
       }
     } catch {
       // Fall back to local Prisma path during migration/cutover.
@@ -92,11 +96,13 @@ export async function getPublicPortfolioByUsername(username: string) {
     leadership,
     experience,
     education,
-  };
+  } satisfies PublicPortfolioPayload;
 }
 
 /** Full portfolio data for the logged-in owner (e.g. onboarding preview). No view tracking, not gated on publish. */
-export async function getPrivatePortfolioDataForUser(userId: string) {
+export async function getPrivatePortfolioDataForUser(
+  userId: string,
+): Promise<PublicPortfolioPayload | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, username: true },
@@ -129,7 +135,7 @@ export async function getPrivatePortfolioDataForUser(userId: string) {
     leadership,
     experience,
     education,
-  };
+  } satisfies PublicPortfolioPayload;
 }
 
 export async function adoptLegacyPortfolioForUser(userId: string) {

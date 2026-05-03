@@ -11,6 +11,6 @@ export default async function UserPublicPage({
 }) {
   const { username } = await params;
   const data = await getPublicPortfolioByUsername(username);
-  if (!data) notFound();
+  if (!data?.profile) notFound();
   return <PublicPortfolioPage data={data} />;
 }
