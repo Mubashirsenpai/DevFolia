@@ -16,7 +16,8 @@ Backend scaffold for splitting architecture:
 2. Copy env
    - `cp .env.example .env` (or create manually on Windows)
 3. Set values in `.env`:
-   - `DATABASE_URL` (Neon/Postgres URL)
+   - `DATABASE_URL` (Neon **pooled** URL if using `-pooler` host)
+   - `DIRECT_URL` (Neon **direct** URL — required for `prisma migrate`; same DB, non-pooler host)
    - `ADMIN_SESSION_SECRET`
    - `FRONTEND_ORIGIN` (your frontend URL)
 4. Generate Prisma client from root schema:
@@ -53,7 +54,8 @@ Backend scaffold for splitting architecture:
   - `FRONTEND_ORIGIN` — **your Vercel site origin only** (e.g. `https://your-app.vercel.app`). No path, no trailing slash. Without this, the process exits on boot.
   - `NODE_ENV=production`
   - `PORT` (Render sets this automatically)
-  - `DATABASE_URL=<your-neon-url>`
+  - `DATABASE_URL=<neon-pooled-url>` (recommended for runtime)
+  - `DIRECT_URL=<neon-direct-url>` (needed for **`prisma migrate`** on deploy; avoids P1002 / advisory-lock timeouts through the pooler)
   - `ADMIN_SESSION_SECRET=<same-secret-used-across-app>`
 
 ## Vercel (frontend) env
