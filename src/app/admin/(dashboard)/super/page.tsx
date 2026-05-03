@@ -66,7 +66,7 @@ export default async function SuperAdminPage() {
           <p className="mt-3 text-sm text-slate-500">No tracked events yet.</p>
         ) : (
           <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-            {eventStats.map((evt) => (
+            {eventStats.map((evt: (typeof eventStats)[number]) => (
               <li
                 key={evt.type}
                 className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2 text-sm"
@@ -85,7 +85,7 @@ export default async function SuperAdminPage() {
           <p className="mt-3 text-sm text-slate-500">No events logged yet.</p>
         ) : (
           <ul className="mt-4 space-y-2">
-            {recentEvents.map((evt) => (
+            {recentEvents.map((evt: (typeof recentEvents)[number]) => (
               <li key={evt.id} className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2">
                 <p className="text-sm text-slate-200">{evt.type}</p>
                 <p className="mt-1 text-xs text-slate-500">

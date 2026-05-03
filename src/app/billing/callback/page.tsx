@@ -14,38 +14,28 @@ export default async function BillingCallbackPage({
   let message = "Verification failed.";
   let success = false;
 
-  if (session && reference) {
-    const secret = process.env.PAYSTACK_SECRET_KEY ?? "";
-    if (secret) {
-      const res = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
-        headers: { Authorization: `Bearer ${secret}` },
-        cache: "no-store",
-      });
-      const data = (await res.json()) as {
-        status: boolean;
-        data?: { status?: string; metadata?: { plan?: string; userId?: string } };
+  const secret = process.env.PAYSTACK_SECRET_KEY ?? "";
+
+  if (!reference?.trim()) {
+    message = "Missing transaction reference.";
+  } else if (!secret) {
+    message = "Paystack is not configured.";
+  } else {
+    const res = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference.trim())}`, {
+      headers: { Authorization: `Bearer ${secret}` },
+      cache: "no-store",
+    });
+    const data = (await res.json()) as {
+      status: boolean;
+      data?: {
+        status?: string;
+        metadata?: { plan?: string; userId?: string };
       };
-      if (data.status && data.data?.status === "success") {
-        const planRaw = data.data.metadata?.plan ?? "PRO";
-        const plan =
-          planRaw === "BUSINESS" ? "BUSINESS" : planRaw === "PRO" ? "PRO" : "FREE";
-        const userId = data.data.metadata?.userId ?? session.sub;
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            plan,
-            subscriptionStatus: "active",
-          },
-        });
-        success = true;
-        message = `Payment successful. Your ${plan} plan is now active.`;
-        await logPlatformEvent({
-          type: "billing.payment_success",
-          userId,
-          metadata: { plan, reference },
-        });
-      } else {
-        message = "Payment not completed yet.";
+    };
+
+    if (!data.status || data.data?.status !== "success") {
+      message = "Payment not completed or could not be verified.";
+      if (session) {
         await logPlatformEvent({
           type: "billing.payment_incomplete",
           userId: session.sub,
@@ -53,7 +43,37 @@ export default async function BillingCallbackPage({
         });
       }
     } else {
-      message = "Paystack is not configured.";
+      const paystackUserId = data.data?.metadata?.userId;
+      if (typeof paystackUserId !== "string" || paystackUserId.length < 8) {
+        message = "Payment metadata is invalid. Contact support with your reference.";
+      } else if (session && session.sub !== paystackUserId) {
+        message =
+          "This payment belongs to another account. Sign in with the account that paid, or contact support.";
+      } else {
+        const planRaw = data.data?.metadata?.plan ?? "PRO";
+        const plan =
+          planRaw === "BUSINESS" ? "BUSINESS" : planRaw === "PRO" ? "PRO" : "FREE";
+
+        const userRow = await prisma.user.findUnique({
+          where: { id: paystackUserId },
+          select: { id: true },
+        });
+        if (!userRow) {
+          message = "Account not found for this payment.";
+        } else {
+          await prisma.user.update({
+            where: { id: paystackUserId },
+            data: { plan, subscriptionStatus: "active" },
+          });
+          success = true;
+          message = `Payment successful. Your ${plan} plan is now active.`;
+          await logPlatformEvent({
+            type: "billing.payment_success",
+            userId: paystackUserId,
+            metadata: { plan, reference },
+          });
+        }
+      }
     }
   }
 

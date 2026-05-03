@@ -3,6 +3,7 @@
 import { createHash, randomBytes } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   createSessionToken,
@@ -14,11 +15,19 @@ import {
 import { adoptLegacyPortfolioForUser } from "@/lib/data";
 import { sendEmail } from "@/lib/mailer";
 import { logPlatformEvent } from "@/lib/platform-events";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { getRequestIpForRateLimit } from "@/lib/request-ip";
 
 export async function loginAction(
   _prev: { error?: string } | undefined,
   formData: FormData,
 ): Promise<{ error?: string }> {
+  const ip = await getRequestIpForRateLimit();
+  const loginRl = checkRateLimit(`login:${ip}`, 25, 15 * 60 * 1000);
+  if (!loginRl.ok) {
+    return { error: `Too many attempts. Try again in ${loginRl.retryAfterSec}s.` };
+  }
+
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const user = await prisma.user.findUnique({ where: { email } });
@@ -65,6 +74,7 @@ export async function signupAction(
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const username = normalizeUsername(String(formData.get("username") ?? ""));
   const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
   if (!email || !email.includes("@")) return { error: "Enter a valid email." };
   if (username.length < 3) {
@@ -73,33 +83,61 @@ export async function signupAction(
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };
   }
+  if (password !== confirmPassword) {
+    return { error: "Passwords do not match." };
+  }
 
-  const existing = await prisma.user.findFirst({
-    where: { OR: [{ email }, { username }] },
-    select: { id: true },
-  });
-  if (existing) return { error: "Email or username already exists." };
+  const ip = await getRequestIpForRateLimit();
+  const signupRl = checkRateLimit(`signup:${ip}`, 8, 60 * 60 * 1000);
+  if (!signupRl.ok) {
+    return { error: `Too many signups from this network. Try again in ${signupRl.retryAfterSec}s.` };
+  }
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      username,
-      passwordHash: hashPassword(password),
-      profile: {
-        create: {
-          displayName: username,
-          headline: "Your professional headline",
-          bio: "Tell visitors who you are and what you build.",
+  let user;
+  try {
+    const existing = await prisma.user.findFirst({
+      where: { OR: [{ email }, { username }] },
+      select: { id: true },
+    });
+    if (existing) return { error: "Email or username already exists." };
+
+    user = await prisma.user.create({
+      data: {
+        email,
+        username,
+        passwordHash: hashPassword(password),
+        profile: {
+          create: {
+            displayName: username,
+            headline: "Your professional headline",
+            bio: "Tell visitors who you are and what you build.",
+          },
         },
       },
-    },
-  });
-  await adoptLegacyPortfolioForUser(user.id);
-  await logPlatformEvent({
-    type: "auth.signup_success",
-    userId: user.id,
-    metadata: { username: user.username },
-  });
+    });
+    await adoptLegacyPortfolioForUser(user.id);
+    await logPlatformEvent({
+      type: "auth.signup_success",
+      userId: user.id,
+      metadata: { username: user.username },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2021") {
+      return {
+        error:
+          "Database tables are missing. From the project folder run: npx prisma migrate deploy",
+      };
+    }
+    if (err instanceof Prisma.PrismaClientInitializationError) {
+      return {
+        error:
+          "Cannot reach the database. Check DATABASE_URL, Neon status, and your network.",
+      };
+    }
+    return {
+      error: "Could not create account. Try again or confirm the database is set up.",
+    };
+  }
 
   const token = await createSessionToken({ sub: user.id, username: user.username });
   const jar = await cookies();
@@ -127,6 +165,12 @@ export async function requestPasswordResetAction(
   _prev: { error?: string; success?: string } | undefined,
   formData: FormData,
 ): Promise<{ error?: string; success?: string }> {
+  const ip = await getRequestIpForRateLimit();
+  const resetRl = checkRateLimit(`pwdreset:${ip}`, 5, 60 * 60 * 1000);
+  if (!resetRl.ok) {
+    return { error: `Too many reset requests. Try again in ${resetRl.retryAfterSec}s.` };
+  }
+
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   if (!email || !email.includes("@")) {
     return { error: "Enter a valid email address." };

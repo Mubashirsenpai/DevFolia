@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ensureProfile } from "@/lib/data";
 import { requireSession } from "@/lib/auth";
+import { backendApiGet } from "@/lib/backend-api";
 
 function getLastDays(days: number) {
   const result: string[] = [];
@@ -16,29 +17,75 @@ function getLastDays(days: number) {
 
 export default async function AdminHomePage() {
   const session = await requireSession();
-  await ensureProfile(session.sub, session.username);
-  const [projects, skills, awards, leadership, experience, education, user, profile, views] = await Promise.all([
-    prisma.project.count({ where: { userId: session.sub } }),
-    prisma.skill.count({ where: { userId: session.sub } }),
-    prisma.award.count({ where: { userId: session.sub } }),
-    prisma.leadership.count({ where: { userId: session.sub } }),
-    prisma.experience.count({ where: { userId: session.sub } }),
-    prisma.education.count({ where: { userId: session.sub } }),
-    prisma.user.findUnique({ where: { id: session.sub } }),
-    prisma.profile.findUnique({ where: { userId: session.sub } }),
-    prisma.dailyProfileView.findMany({
+  const backend = await backendApiGet<{
+    ok: boolean;
+    data: {
+      publicViews: number;
+      viewsToday: number;
+      views7d: number;
+      series14: Array<{ day: string; count: number }>;
+      counts: {
+        projects: number;
+        skills: number;
+        awards: number;
+        leadership: number;
+        experience: number;
+        education: number;
+      };
+    };
+  }>("/analytics/overview");
+  let projects = 0;
+  let skills = 0;
+  let awards = 0;
+  let leadership = 0;
+  let experience = 0;
+  let education = 0;
+  let user: { publicViews?: number; plan?: string } | null = null;
+  let profile: { theme?: string | null } | null = null;
+  let views: Array<{ day: string; count: number }> = [];
+
+  if (backend?.ok) {
+    projects = backend.data.counts.projects;
+    skills = backend.data.counts.skills;
+    awards = backend.data.counts.awards;
+    leadership = backend.data.counts.leadership;
+    experience = backend.data.counts.experience;
+    education = backend.data.counts.education;
+    user = { publicViews: backend.data.publicViews };
+    views = backend.data.series14;
+    profile = await prisma.profile.findUnique({
       where: { userId: session.sub },
-      orderBy: { day: "asc" },
-      take: 120,
-    }),
-  ]);
+      select: { theme: true },
+    });
+  } else {
+    await ensureProfile(session.sub, session.username);
+    [projects, skills, awards, leadership, experience, education, user, profile, views] = await Promise.all([
+      prisma.project.count({ where: { userId: session.sub } }),
+      prisma.skill.count({ where: { userId: session.sub } }),
+      prisma.award.count({ where: { userId: session.sub } }),
+      prisma.leadership.count({ where: { userId: session.sub } }),
+      prisma.experience.count({ where: { userId: session.sub } }),
+      prisma.education.count({ where: { userId: session.sub } }),
+      prisma.user.findUnique({ where: { id: session.sub } }),
+      prisma.profile.findUnique({ where: { userId: session.sub } }),
+      prisma.dailyProfileView.findMany({
+        where: { userId: session.sub },
+        orderBy: { day: "asc" },
+        take: 120,
+      }),
+    ]);
+  }
   const last14 = getLastDays(14);
-  const viewMap = new Map(views.map((v) => [v.day, v.count]));
-  const series = last14.map((day) => ({ day, count: viewMap.get(day) ?? 0 }));
-  const maxCount = Math.max(1, ...series.map((s) => s.count));
+  const viewMap = new Map<string, number>(
+    views.map((v: { day: string; count: number }) => [v.day, v.count]),
+  );
+  const series = last14.map((day: string) => ({ day, count: viewMap.get(day) ?? 0 }));
+  const maxCount = Math.max(1, ...series.map((s: (typeof series)[number]) => s.count));
   const todayKey = new Date().toISOString().slice(0, 10);
-  const viewsToday = viewMap.get(todayKey) ?? 0;
-  const views7d = series.slice(-7).reduce((sum, p) => sum + p.count, 0);
+  const viewsToday = backend?.ok ? backend.data.viewsToday : viewMap.get(todayKey) ?? 0;
+  const views7d = backend?.ok
+    ? backend.data.views7d
+    : series.slice(-7).reduce((sum, p) => sum + p.count, 0);
   const totalContent =
     projects + skills + awards + leadership + experience + education;
   const sectionStats = [
@@ -49,7 +96,10 @@ export default async function AdminHomePage() {
     { label: "Awards", href: "/admin/awards", value: awards },
     { label: "Leadership", href: "/admin/leadership", value: leadership },
   ];
-  const maxSectionValue = Math.max(1, ...sectionStats.map((s) => s.value));
+  const maxSectionValue = Math.max(
+    1,
+    ...sectionStats.map((s: (typeof sectionStats)[number]) => s.value),
+  );
 
   const cards = [
     { href: "/admin/profile", label: "Profile & photo", hint: "Headline, bio, links" },
@@ -112,7 +162,7 @@ export default async function AdminHomePage() {
             className="mt-4 grid items-end gap-2"
             style={{ gridTemplateColumns: `repeat(${series.length}, minmax(0, 1fr))` }}
           >
-            {series.map((point) => (
+            {series.map((point: (typeof series)[number]) => (
               <div key={point.day} className="flex flex-col items-center gap-2">
                 <div
                   className="w-full rounded-t bg-emerald-500/80"
@@ -128,7 +178,7 @@ export default async function AdminHomePage() {
         <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-5">
           <h2 className="text-lg font-semibold text-white">Content distribution</h2>
           <ul className="mt-4 space-y-3">
-            {sectionStats.map((item) => (
+            {sectionStats.map((item: (typeof sectionStats)[number]) => (
               <li key={item.label}>
                 <div className="mb-1 flex items-center justify-between text-sm">
                   <Link href={item.href} className="text-slate-300 hover:text-emerald-300">
@@ -148,7 +198,7 @@ export default async function AdminHomePage() {
         </div>
       </div>
       <ul className="mt-8 grid gap-3 sm:grid-cols-2">
-        {cards.map((c) => (
+        {cards.map((c: (typeof cards)[number]) => (
           <li key={c.href}>
             <Link
               href={c.href}

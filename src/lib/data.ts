@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { logPlatformEvent } from "@/lib/platform-events";
+import type { Prisma } from "@prisma/client";
+import { getPublicApiBase } from "@/lib/remote-api";
 
 export async function ensureProfile(userId: string, fallbackName = "Your Name") {
   return prisma.profile.upsert({
@@ -15,6 +17,31 @@ export async function ensureProfile(userId: string, fallbackName = "Your Name") 
 }
 
 export async function getPublicPortfolioByUsername(username: string) {
+  const backendApi = getPublicApiBase();
+  if (backendApi) {
+    try {
+      const response = await fetch(
+        `${backendApi}/public/${encodeURIComponent(username.toLowerCase())}`,
+        { cache: "no-store" },
+      );
+      if (response.ok) {
+        const payload = (await response.json()) as { data?: unknown };
+        return (payload.data ?? null) as {
+          user: { id: string; username: string };
+          profile: Awaited<ReturnType<typeof prisma.profile.findUnique>>;
+          projects: Awaited<ReturnType<typeof prisma.project.findMany>>;
+          skills: Awaited<ReturnType<typeof prisma.skill.findMany>>;
+          awards: Awaited<ReturnType<typeof prisma.award.findMany>>;
+          leadership: Awaited<ReturnType<typeof prisma.leadership.findMany>>;
+          experience: Awaited<ReturnType<typeof prisma.experience.findMany>>;
+          education: Awaited<ReturnType<typeof prisma.education.findMany>>;
+        } | null;
+      }
+      if (response.status === 404) return null;
+    } catch {
+      // Fall back to local Prisma path during migration/cutover.
+    }
+  }
   const user = await prisma.user.findUnique({
     where: { username: username.toLowerCase() },
     select: { id: true, username: true },
@@ -115,7 +142,7 @@ export async function adoptLegacyPortfolioForUser(userId: string) {
     orderBy: { updatedAt: "desc" },
   });
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     if (legacyProfile) {
       await tx.profile.update({
         where: { id: ownedProfile.id },

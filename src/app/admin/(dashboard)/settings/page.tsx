@@ -7,10 +7,10 @@ import { portfolioThemeLabel } from "@/lib/portfolio-themes";
 export default async function AdminSettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const session = await requireSession();
-  const { saved } = await searchParams;
+  const { saved, error } = await searchParams;
   const [user, profile, domainVerification, plan] = await Promise.all([
     prisma.user.findUnique({ where: { id: session.sub } }),
     prisma.profile.findUnique({ where: { userId: session.sub } }),
@@ -34,6 +34,11 @@ export default async function AdminSettingsPage({
       {saved === "1" && (
         <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-200">
           Settings saved.
+        </div>
+      )}
+      {error && (
+        <div className="rounded-lg border border-amber-700/40 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">
+          {error}
         </div>
       )}
 
@@ -68,7 +73,7 @@ export default async function AdminSettingsPage({
             defaultValue={defaultTheme}
             className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
           >
-            {allowedThemes.map((t) => (
+            {allowedThemes.map((t: (typeof allowedThemes)[number]) => (
               <option key={t} value={t}>
                 {portfolioThemeLabel(t)}
               </option>

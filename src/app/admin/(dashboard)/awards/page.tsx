@@ -73,7 +73,7 @@ export default async function AdminAwardsPage({
       </section>
 
       <ul className="space-y-6">
-        {awards.map((a) => (
+        {awards.map((a: (typeof awards)[number]) => (
           <li
             key={a.id}
             className="rounded-xl border border-slate-800 bg-slate-950/50 p-6"

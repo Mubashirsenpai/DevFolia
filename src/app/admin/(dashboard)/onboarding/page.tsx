@@ -6,7 +6,12 @@ import { ensureProfile, getPrivatePortfolioDataForUser } from "@/lib/data";
 import { PublicPortfolioPage } from "@/components/portfolio/PublicPortfolioPage";
 import { OnboardingPortfolioPreview } from "@/components/onboarding/OnboardingPortfolioPreview";
 
-export default async function AdminOnboardingPage() {
+export default async function AdminOnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   const session = await requireSession();
   const profile = await ensureProfile(session.sub, session.username);
   const previewData = await getPrivatePortfolioDataForUser(session.sub);
@@ -23,6 +28,11 @@ export default async function AdminOnboardingPage() {
       <p className="mt-1 text-sm text-slate-400">
         Use this page as your final publish step after customizing and uploading your content.
       </p>
+      {error && (
+        <div className="mt-4 rounded-lg border border-amber-700/40 bg-amber-950/20 px-4 py-3 text-sm text-amber-200">
+          {error}
+        </div>
+      )}
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-3 text-sm text-slate-300">
           Profile: {profile.displayName ? "Ready" : "Missing"}

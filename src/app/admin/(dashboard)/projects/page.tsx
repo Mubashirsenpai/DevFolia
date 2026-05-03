@@ -69,7 +69,7 @@ export default async function AdminProjectsPage({
               name="status"
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
             >
-              {PROJECT_STATUSES.map((s) => (
+              {PROJECT_STATUSES.map((s: (typeof PROJECT_STATUSES)[number]) => (
                 <option key={s} value={s}>
                   {statusLabel(s)}
                 </option>
@@ -104,7 +104,7 @@ export default async function AdminProjectsPage({
       </section>
 
       <ul className="space-y-8">
-        {projects.map((p) => (
+        {projects.map((p: (typeof projects)[number]) => (
           <li
             key={p.id}
             className="rounded-xl border border-slate-800 bg-slate-950/50 p-6"
@@ -140,7 +140,7 @@ export default async function AdminProjectsPage({
                   defaultValue={p.status}
                   className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-white"
                 >
-                  {PROJECT_STATUSES.map((s) => (
+                  {PROJECT_STATUSES.map((s: (typeof PROJECT_STATUSES)[number]) => (
                     <option key={s} value={s}>
                       {statusLabel(s)}
                     </option>

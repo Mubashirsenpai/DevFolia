@@ -1,17 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
+import { getJwtSecretBytes } from "@/lib/session-secret";
 
 const COOKIE_NAME = "portfolio_session";
-
-function getSecretKey(): Uint8Array {
-  const s = process.env.ADMIN_SESSION_SECRET ?? "";
-  const key =
-    s.length >= 32
-      ? s
-      : "dev-only-unsafe-secret-use-env-32chars-min!";
-  return new TextEncoder().encode(key);
-}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -28,7 +20,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
     try {
-      await jwtVerify(token, getSecretKey());
+      await jwtVerify(token, getJwtSecretBytes());
       const url = request.nextUrl.clone();
       url.pathname = "/admin";
       return NextResponse.redirect(url);
@@ -45,7 +37,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
     try {
-      await jwtVerify(token, getSecretKey());
+      await jwtVerify(token, getJwtSecretBytes());
       return NextResponse.next();
     } catch {
       const url = request.nextUrl.clone();

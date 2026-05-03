@@ -2,6 +2,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
+import { getJwtSecretBytes } from "@/lib/session-secret";
 
 const COOKIE_NAME = "portfolio_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
@@ -11,14 +12,8 @@ export type SessionPayload = {
   username: string;
 };
 
-/** Must match middleware secret resolution */
 function getSecret(): Uint8Array {
-  const s = process.env.ADMIN_SESSION_SECRET ?? "";
-  const key =
-    s.length >= 32
-      ? s
-      : "dev-only-unsafe-secret-use-env-32chars-min!";
-  return new TextEncoder().encode(key);
+  return getJwtSecretBytes();
 }
 
 export function hashPassword(password: string): string {
@@ -30,8 +25,14 @@ export function hashPassword(password: string): string {
 export function verifyPassword(password: string, encoded: string): boolean {
   const [salt, storedHash] = encoded.split(":");
   if (!salt || !storedHash) return false;
-  const hash = scryptSync(password, salt, 64);
-  return timingSafeEqual(hash, Buffer.from(storedHash, "hex"));
+  try {
+    const hash = scryptSync(password, salt, 64);
+    const stored = Buffer.from(storedHash, "hex");
+    if (hash.length !== stored.length) return false;
+    return timingSafeEqual(hash, stored);
+  } catch {
+    return false;
+  }
 }
 
 export async function createSessionToken(

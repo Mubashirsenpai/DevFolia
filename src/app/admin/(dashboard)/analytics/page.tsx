@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { backendApiGet } from "@/lib/backend-api";
 
 function getLastDays(days: number) {
   const result: string[] = [];
@@ -15,19 +16,30 @@ function getLastDays(days: number) {
 
 export default async function AdminAnalyticsPage() {
   const session = await requireSession();
-  const [user, views] = await Promise.all([
-    prisma.user.findUnique({ where: { id: session.sub } }),
-    prisma.dailyProfileView.findMany({
-      where: { userId: session.sub },
-      orderBy: { day: "asc" },
-      take: 120,
-    }),
-  ]);
+  const backend = await backendApiGet<{
+    ok: boolean;
+    data: {
+      publicViews: number;
+      series14: Array<{ day: string; count: number }>;
+    };
+  }>("/analytics/overview");
+  const [user, views] = backend
+    ? [{ publicViews: backend.data.publicViews }, backend.data.series14]
+    : await Promise.all([
+        prisma.user.findUnique({ where: { id: session.sub } }),
+        prisma.dailyProfileView.findMany({
+          where: { userId: session.sub },
+          orderBy: { day: "asc" },
+          take: 120,
+        }),
+      ]);
 
   const last14 = getLastDays(14);
-  const viewMap = new Map(views.map((v) => [v.day, v.count]));
-  const series = last14.map((day) => ({ day, count: viewMap.get(day) ?? 0 }));
-  const maxCount = Math.max(1, ...series.map((s) => s.count));
+  const viewMap = new Map<string, number>(
+    views.map((v: { day: string; count: number }) => [v.day, v.count]),
+  );
+  const series = last14.map((day: string) => ({ day, count: viewMap.get(day) ?? 0 }));
+  const maxCount = Math.max(1, ...series.map((s: (typeof series)[number]) => s.count));
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -59,7 +71,7 @@ export default async function AdminAnalyticsPage() {
           className="mt-4 grid items-end gap-2"
           style={{ gridTemplateColumns: `repeat(${series.length}, minmax(0, 1fr))` }}
         >
-          {series.map((point) => (
+          {series.map((point: (typeof series)[number]) => (
             <div key={point.day} className="flex flex-col items-center gap-2">
               <div
                 className="w-full rounded-t bg-emerald-500/80"

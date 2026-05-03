@@ -6,8 +6,10 @@ import { resolveTxt } from "dns/promises";
 import path from "path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/auth";
+import { COOKIE_NAME, requireSession } from "@/lib/auth";
+import { getPublicApiBase } from "@/lib/remote-api";
 import { getPriceIdForPlan, getStripe } from "@/lib/stripe";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { logPlatformEvent } from "@/lib/platform-events";
@@ -201,6 +203,54 @@ export async function updateProfile(formData: FormData) {
       );
     }
   }
+
+  const backendBase = getPublicApiBase();
+  if (backendBase) {
+    const token = (await cookies()).get(COOKIE_NAME)?.value;
+    if (!token) redirect("/admin/login");
+    const body = {
+      displayName: txt(formData, "displayName", "Your Name"),
+      headline: txt(formData, "headline"),
+      bio: txt(formData, "bio"),
+      email: txt(formData, "email") || null,
+      phone: txt(formData, "phone") || null,
+      location: txt(formData, "location") || null,
+      website: normalizeUrl(txt(formData, "website")),
+      discordUrl: normalizeUrl(txt(formData, "discordUrl")),
+      xUrl: normalizeUrl(txt(formData, "xUrl")),
+      threadsUrl: normalizeUrl(txt(formData, "threadsUrl")),
+      instagramUrl: normalizeUrl(txt(formData, "instagramUrl")),
+      facebookUrl: normalizeUrl(txt(formData, "facebookUrl")),
+      whatsappUrl: normalizeUrl(txt(formData, "whatsappUrl")),
+      linkedinUrl: normalizeUrl(txt(formData, "linkedinUrl")),
+      githubUrl: normalizeUrl(txt(formData, "githubUrl")),
+      resumeUrl: nextResume,
+      profileImage: nextProfileImage,
+    };
+    const res = await fetch(`${backendBase}/portfolio/profile`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      let msg = "Could not save profile.";
+      try {
+        const j = (await res.json()) as { error?: string };
+        if (j.error) msg = j.error;
+      } catch {
+        /* ignore */
+      }
+      redirect("/admin/profile?error=" + encodeURIComponent(msg));
+    }
+    revalidatePath("/");
+    revalidatePath("/admin/profile");
+    revalidatePath(`/${session.username}`);
+    redirect("/admin/profile?saved=1");
+  }
+
   await prisma.profile.update({
     where: { userId: session.sub },
     data: {
@@ -231,6 +281,30 @@ export async function updateProfile(formData: FormData) {
 
 export async function completeOnboarding() {
   const session = await requireSession();
+  const backendBase = getPublicApiBase();
+  if (backendBase) {
+    const token = (await cookies()).get(COOKIE_NAME)?.value;
+    if (!token) redirect("/admin/login");
+    const res = await fetch(`${backendBase}/portfolio/onboarding/complete`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      redirect(
+        "/admin/onboarding?error=" +
+          encodeURIComponent("Could not publish. Try again."),
+      );
+    }
+    revalidatePath("/admin");
+    revalidatePath("/admin/onboarding");
+    revalidatePath(`/${session.username}`);
+    await logPlatformEvent({
+      type: "portfolio.published",
+      userId: session.sub,
+      metadata: { username: session.username },
+    });
+    redirect("/admin");
+  }
   await prisma.profile.upsert({
     where: { userId: session.sub },
     create: {
@@ -263,15 +337,46 @@ export async function updateAccountSettings(formData: FormData) {
   const customDomainRaw = txt(formData, "customDomain").trim().toLowerCase() || null;
   const customDomain = plan === "BUSINESS" ? customDomainRaw : null;
 
+  const allowed = allowedThemesForPlan(plan);
+  const resolvedTheme = allowed.includes(theme) ? theme : allowed[0] ?? "midnight";
+
+  const backendBase = getPublicApiBase();
+  if (backendBase) {
+    const token = (await cookies()).get(COOKIE_NAME)?.value;
+    if (!token) redirect("/admin/login");
+    const res = await fetch(`${backendBase}/account/settings`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        billingEmail,
+        theme: resolvedTheme,
+        customDomain,
+      }),
+    });
+    if (!res.ok) {
+      let msg = "Could not save settings.";
+      try {
+        const j = (await res.json()) as { error?: string };
+        if (j.error) msg = j.error;
+      } catch {
+        /* ignore */
+      }
+      redirect("/admin/settings?error=" + encodeURIComponent(msg));
+    }
+    revalidatePath("/admin/settings");
+    revalidatePath(`/${session.username}`);
+    redirect("/admin/settings?saved=1");
+  }
+
   await prisma.user.update({
     where: { id: session.sub },
     data: {
       billingEmail,
     },
   });
-
-  const allowed = allowedThemesForPlan(plan);
-  const resolvedTheme = allowed.includes(theme) ? theme : allowed[0] ?? "midnight";
 
   await prisma.profile.updateMany({
     where: { userId: session.sub },

@@ -82,7 +82,7 @@ export default async function AdminExperiencePage({
       </section>
 
       <ul className="space-y-6">
-        {rows.map((x) => (
+        {rows.map((x: (typeof rows)[number]) => (
           <li
             key={x.id}
             className="rounded-xl border border-slate-800 bg-slate-950/50 p-6"

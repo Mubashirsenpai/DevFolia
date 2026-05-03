@@ -78,7 +78,7 @@ export default async function AdminLeadershipPage({
       </section>
 
       <ul className="space-y-6">
-        {items.map((item) => (
+        {items.map((item: (typeof items)[number]) => (
           <li
             key={item.id}
             className="rounded-xl border border-slate-800 bg-slate-950/50 p-6"
