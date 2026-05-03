@@ -5,6 +5,9 @@
  * CI hosts (e.g. Render) often only set DATABASE_URL — we mirror it so the CLI can start.
  * For Neon: if DATABASE_URL uses the pooler host, set DIRECT_URL to the non-pooler
  * "direct" connection in production to avoid migration advisory-lock timeouts (P1002).
+ *
+ * Some hosts run root `postinstall` before `prisma` appears in node_modules (or use a
+ * layout where the CLI is not resolvable yet). We fall back to `npx prisma@<version>`.
  */
 
 const { spawnSync } = require("child_process");
@@ -20,23 +23,54 @@ if (!process.env.DIRECT_URL?.trim() && process.env.DATABASE_URL?.trim()) {
 const repoRoot = path.resolve(__dirname, "..");
 const pkgJson = path.join(repoRoot, "package.json");
 
-function resolvePrismaCli() {
-  const legacy = path.join(repoRoot, "node_modules", "prisma", "build", "index.js");
-  if (fs.existsSync(legacy)) return legacy;
+function readPinnedPrismaVersion() {
+  const fromEnv = String(process.env.PRISMA_NPX_VERSION || "").trim();
+  if (fromEnv) return fromEnv;
   try {
-    const req = createRequire(pkgJson);
-    return req.resolve("prisma/build/index.js");
-  } catch (e) {
-    console.error(
-      `Prisma CLI not found. Install from repo root so "prisma" is in dependencies:\n` +
-        `  ${legacy}\n` +
-        `  (resolve error: ${e && e.message ? e.message : e})`,
-    );
-    process.exit(1);
+    const json = JSON.parse(fs.readFileSync(pkgJson, "utf8"));
+    const spec =
+      (json.dependencies && json.dependencies.prisma) ||
+      (json.devDependencies && json.devDependencies.prisma);
+    if (!spec || typeof spec !== "string") return "5.22.0";
+    const m = spec.match(/(\d+\.\d+\.\d+)/);
+    return m ? m[1] : "5.22.0";
+  } catch {
+    return "5.22.0";
   }
 }
 
-const prismaCli = resolvePrismaCli();
+/**
+ * @returns {{ kind: "node"; cli: string } | { kind: "npx"; version: string }}
+ */
+function resolvePrismaInvoker() {
+  const noNpx = ["1", "true", "yes"].includes(String(process.env.PRISMA_NO_NPX || "").trim().toLowerCase());
+
+  const legacy = path.join(repoRoot, "node_modules", "prisma", "build", "index.js");
+  if (fs.existsSync(legacy)) {
+    return { kind: "node", cli: legacy };
+  }
+  try {
+    const req = createRequire(pkgJson);
+    const resolved = req.resolve("prisma");
+    if (fs.existsSync(resolved)) {
+      return { kind: "node", cli: resolved };
+    }
+  } catch {
+    // continue
+  }
+  if (noNpx) {
+    console.error(
+      `Prisma CLI not found under ${repoRoot}/node_modules/prisma and PRISMA_NO_NPX is set.\n` +
+        `Run "npm install" from the repo root (same folder as package.json) so "prisma" is installed.`,
+    );
+    process.exit(1);
+  }
+  const version = readPinnedPrismaVersion();
+  console.warn(
+    `[run-prisma] Local prisma CLI not found; using npx prisma@${version} (install from repo root to avoid this).`,
+  );
+  return { kind: "npx", version };
+}
 
 const args = process.argv.slice(2);
 if (
@@ -53,11 +87,23 @@ if (args.length === 0) {
   process.exit(1);
 }
 
-const proc = spawnSync(process.execPath, [prismaCli, ...args], {
-  cwd: repoRoot,
-  stdio: "inherit",
-  env: process.env,
-});
+const invoker = resolvePrismaInvoker();
+let proc;
+if (invoker.kind === "node") {
+  proc = spawnSync(process.execPath, [invoker.cli, ...args], {
+    cwd: repoRoot,
+    stdio: "inherit",
+    env: process.env,
+  });
+} else {
+  const npxCmd = process.platform === "win32" ? "npx.cmd" : "npx";
+  proc = spawnSync(npxCmd, ["--yes", `prisma@${invoker.version}`, ...args], {
+    cwd: repoRoot,
+    stdio: "inherit",
+    env: process.env,
+    shell: process.platform === "win32",
+  });
+}
 
 if (proc.error) {
   console.error(proc.error);
