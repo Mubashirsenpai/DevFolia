@@ -49,16 +49,16 @@ Backend scaffold for splitting architecture:
 - Root directory: `backend`
 - Build command: `npm install && npm run prisma:generate && npm run prisma:migrate && npm run build`
 - Start command: `npm run start`
-- Environment variables:
+- Environment variables (all required for a successful start):
+  - `FRONTEND_ORIGIN` — **your Vercel site origin only** (e.g. `https://your-app.vercel.app`). No path, no trailing slash. Without this, the process exits on boot.
   - `NODE_ENV=production`
   - `PORT` (Render sets this automatically)
-  - `FRONTEND_ORIGIN=https://your-vercel-app.vercel.app`
   - `DATABASE_URL=<your-neon-url>`
   - `ADMIN_SESSION_SECRET=<same-secret-used-across-app>`
 
 ## Vercel (frontend) env
 
-Use the **same** `ADMIN_SESSION_SECRET` as Render so JWTs from `/auth/login` verify in middleware.
+Use the **same** `ADMIN_SESSION_SECRET` as Render so JWTs from `/auth/login` verify in the Next.js app (session / proxy).
 
 - `NEXT_PUBLIC_API_URL=https://your-service.onrender.com` — login/signup and public portfolio fallback call this URL from the browser or server.
 
