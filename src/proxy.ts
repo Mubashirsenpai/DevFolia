@@ -5,7 +5,7 @@ import { getJwtSecretBytes } from "@/lib/session-secret";
 
 const COOKIE_NAME = "portfolio_session";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(COOKIE_NAME)?.value;
   const isPublicAuthRoute =

@@ -3,7 +3,10 @@
 import { createHash, randomBytes } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Prisma } from "@prisma/client";
+import {
+  PrismaClientInitializationError,
+  PrismaClientKnownRequestError,
+} from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
 import {
   createSessionToken,
@@ -122,13 +125,13 @@ export async function signupAction(
       metadata: { username: user.username },
     });
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2021") {
+    if (err instanceof PrismaClientKnownRequestError && err.code === "P2021") {
       return {
         error:
           "Database tables are missing. From the project folder run: npx prisma migrate deploy",
       };
     }
-    if (err instanceof Prisma.PrismaClientInitializationError) {
+    if (err instanceof PrismaClientInitializationError) {
       return {
         error:
           "Cannot reach the database. Check DATABASE_URL, Neon status, and your network.",
