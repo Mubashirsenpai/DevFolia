@@ -47,9 +47,19 @@ Backend scaffold for splitting architecture:
 
 ## Render setup
 
-- Root directory: `backend`
-- Build command: `npm install && npm run prisma:generate && npm run prisma:migrate && npm run build`
-- Start command: `npm run start`
+This repo is an **npm workspace** (`backend` is a workspace). The `prisma` CLI and `scripts/run-prisma.cjs` live at the **repository root**, so installs must run from the root or `node_modules/prisma` will be missing.
+
+**Option A — recommended (monorepo root on Render)**
+
+- **Root directory:** leave empty (clone root, same folder as root `package.json`).
+- **Build command:** `npm ci && npm run db:generate && npm run db:migrate && npm run build --workspace devfolia-backend` (adjust migrate if you use `SKIP_PRISMA_MIGRATE` elsewhere).
+- **Start command:** `npm run start --workspace devfolia-backend` (or `node backend/dist/index.js` from root after `cd backend` only if your build outputs there — match your `tsc` `outDir`).
+
+**Option B — Root directory `backend` only**
+
+- **Build command:** install from parent first, e.g. `cd .. && npm ci && npm run db:generate && npm run db:migrate && cd backend && npm run build` so Prisma exists under the root `node_modules`.
+
+Previously (root = `backend` + `npm install` only inside `backend`), `npm run prisma:generate` could not find the Prisma package because it is not a dependency of `backend/package.json`.
 - Environment variables (all required for a successful start):
   - `FRONTEND_ORIGIN` — **your Vercel site origin only** (e.g. `https://your-app.vercel.app`). Same as `FRONTEND_URL` or `CORS_ORIGIN` if you prefer. No path, no trailing slash. Without one of these, the process exits on boot.
   - `NODE_ENV=production`

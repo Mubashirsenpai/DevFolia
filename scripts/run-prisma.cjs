@@ -10,17 +10,33 @@
 const { spawnSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const { createRequire } = require("module");
 
 if (!process.env.DIRECT_URL?.trim() && process.env.DATABASE_URL?.trim()) {
   process.env.DIRECT_URL = process.env.DATABASE_URL;
 }
 
-const cwd = process.cwd();
-const prismaCli = path.join(cwd, "node_modules", "prisma", "build", "index.js");
-if (!fs.existsSync(prismaCli)) {
-  console.error(`Prisma CLI not found at ${prismaCli} (cwd: ${cwd})`);
-  process.exit(1);
+/** Repo root (parent of /scripts), not process.cwd() — CI cwd can differ from install root. */
+const repoRoot = path.resolve(__dirname, "..");
+const pkgJson = path.join(repoRoot, "package.json");
+
+function resolvePrismaCli() {
+  const legacy = path.join(repoRoot, "node_modules", "prisma", "build", "index.js");
+  if (fs.existsSync(legacy)) return legacy;
+  try {
+    const req = createRequire(pkgJson);
+    return req.resolve("prisma/build/index.js");
+  } catch (e) {
+    console.error(
+      `Prisma CLI not found. Install from repo root so "prisma" is in dependencies:\n` +
+        `  ${legacy}\n` +
+        `  (resolve error: ${e && e.message ? e.message : e})`,
+    );
+    process.exit(1);
+  }
 }
+
+const prismaCli = resolvePrismaCli();
 
 const args = process.argv.slice(2);
 if (
@@ -38,7 +54,7 @@ if (args.length === 0) {
 }
 
 const proc = spawnSync(process.execPath, [prismaCli, ...args], {
-  cwd,
+  cwd: repoRoot,
   stdio: "inherit",
   env: process.env,
 });
